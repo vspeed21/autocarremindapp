@@ -1,0 +1,38 @@
+import apiClient from '@/src/config/client/axios';
+import getConfigAxios from '@/src/config/client/config';
+
+
+const BASE_URL = '/vehiculos';
+
+export async function crearVehiculo(body: any) {
+  try {
+    const config = await getConfigAxios();
+    const { data } = await apiClient.post(`${BASE_URL}`, body, config);
+    return data;
+  } catch (error: any) {
+    console.log(error.response.data);
+    return error.response.data;
+  }
+}
+
+export async function obtenerVehiculos() {
+  try {
+    const config = await getConfigAxios();
+    const { data } = await apiClient(`${BASE_URL}`, config);
+    return data;
+  } catch (error: any) {
+    console.log(error.response.data);
+    return error.response.data;
+  }
+}
+
+export async function actualizarVehiculo(body: any) {
+  try {
+    const config = await getConfigAxios();
+    const { data } = await apiClient.put(`${BASE_URL}/${body.id}`, body, config);
+    return data;
+  } catch (error: any) {
+    console.log(error.response.data);
+    return error.response.data;
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Auto Car Remaind",
+    "slug": "autocarremind",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logoacr.png",
+    "scheme": "autocarremind",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/logoacr.png",
+        "backgroundImage": "./assets/images/logoacr.png",
+        "monochromeImage": "./assets/images/logoacr.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logoacr.png",
+          "imageWidth": 500,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

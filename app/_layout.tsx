@@ -1,0 +1,50 @@
+import { Stack } from "expo-router";
+import { PaperProvider } from 'react-native-paper';
+
+export default function RootLayout() {
+  return (
+    <PaperProvider>
+      <Stack
+        screenOptions={{ headerTitleAlign: 'center' }}
+      >
+        {/* Public Routes */}
+        <Stack.Screen
+          name='index'
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name='auth/login'
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name='auth/signup'
+          options={{ headerShown: false }}
+        />
+
+        {/* Private Routes */}
+        <Stack.Screen
+          name="vehiculos/index"
+          options={{
+            headerTitle: 'Lista de Vehículos'
+          }}
+        />
+
+        <Stack.Screen
+          name="mantenimientos/crear"
+          options={{
+            headerTitle: 'Agrega un mantenimiento'
+          }}
+        />
+        <Stack.Screen
+          name='mantenimientos/index'
+          options={{
+            headerTitle: 'Lista de mantenimientos'
+          }}
+        />
+
+
+      </Stack>
+    </PaperProvider>
+  )
+}
