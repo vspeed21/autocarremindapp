@@ -3,11 +3,12 @@ import { ActivityIndicator, Text, View } from 'react-native';
 interface Props {
   msg1: string
   msg2: string
+  full?: boolean
 }
 
-function LoadingSpinner({ msg1, msg2 }: Props) {
+function LoadingSpinner({ msg1, msg2, full = true }: Props) {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ flex: full ? 1 : undefined, justifyContent: 'center', alignItems: 'center' }}>
       <ActivityIndicator
         color='blue'
         size={40}

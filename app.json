@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/images/logoacr.png",
         "monochromeImage": "./assets/images/logoacr.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.vspeed21.autocarremind"
     },
     "web": {
       "output": "static"
@@ -28,7 +29,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/logoacr.png",
-          "imageWidth": 500,
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
@@ -40,6 +41,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3b3bece4-d542-4f0f-9b0e-4e7c0464a9ad"
+      }
     }
   }
 }

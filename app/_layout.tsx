@@ -26,7 +26,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="vehiculos/index"
           options={{
-            headerTitle: 'Lista de Vehículos'
+            headerTitle: 'Mí garaje'
           }}
         />
 

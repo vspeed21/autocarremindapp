@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Dropdown } from 'react-native-element-dropdown';
-import { Divider } from 'react-native-paper';
+import { Divider, Icon } from 'react-native-paper';
 
 const hoy = new Date();
 
@@ -90,40 +90,72 @@ function MantenimientoList() {
   }, [vehicleId]);
 
   if (isLoading) {
-    return <LoadingSpinner msg1='Cargando mantenimientos...' msg2='' />
+    return <LoadingSpinner msg1='Obteniendo mantenimientos...' msg2='' />
   }
 
   return (
     <View style={{ marginBottom: 150 }}>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-        <Dropdown
-          style={[styles.dropdown]}
-          placeholder='Filtrar mantenimientos'
-          data={MANTENIMIENTOS_VEHICLE}
-          search
-          maxHeight={400}
-          labelField='nombre'
-          valueField='nombre'
-          value={selectedMantenimiento}
-          searchPlaceholder='Buscar mantenimiento'
-          onChange={item => {
-            setSelectedMantenimiento(item.value);
-          }}
-        />
+      {mantenimientos && mantenimientos.length > 1 ? (
+        <>
+          <Text style={styles.actualVehiculo}>{vehiculo.marca} {vehiculo.modelo} - {vehiculo.placa}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <Dropdown
+              style={[styles.dropdown]}
+              placeholder='Filtrar mantenimientos'
+              data={MANTENIMIENTOS_VEHICLE}
+              search
+              maxHeight={400}
+              labelField='nombre'
+              valueField='nombre'
+              value={selectedMantenimiento}
+              searchPlaceholder='Buscar mantenimiento'
+              onChange={item => {
+                setSelectedMantenimiento(item.value);
+              }}
+            />
 
-        <Text onPress={() => setSelectedMantenimiento('')} style={{ width: '15%', fontWeight: 'bold', fontSize: 20 }}>
-          X
-        </Text>
-      </View>
+            <Text onPress={() => setSelectedMantenimiento('')} style={{ width: '15%', fontWeight: 'bold', fontSize: 20 }}>
+              X
+            </Text>
+          </View>
+          <Divider />
+        </>
+      ) : null}
 
-      <Text style={styles.actualVehiculo}>{vehiculo.marca} {vehiculo.modelo} - {vehiculo.placa}</Text>
+      {!mantenimientos ? (
+        <View style={{
+          height: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 20,
+        }}>
 
-      <Divider />
+          <Icon
+            size={180}
+            source='car-wrench'
+            color='#464b51'
+          />
+
+          <Text style={{ fontSize: 16, textAlign: 'center', color: '#000' }}>
+            El vehículo <Text style={{ fontWeight: 'bold' }}>{vehiculo.placa}</Text> no tiene mantenimientos registrados en este momento
+          </Text>
+
+          <Text style={{
+            fontSize: 14,
+            color: '#5b6068',
+            marginTop: 25,
+            fontStyle: 'italic'
+          }}>
+            Toca el botón de abajo para registrar el primero.
+          </Text>
+
+        </View>
+      ) : null}
+
 
       <FlatList
         data={mantenimientos}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', marginBlock: 20 }}>El vehículo {vehiculo.placa} no tiene mantenimientos registrados. Añade uno.</Text>}
         renderItem={({ item }) => (
           <View style={styles.mantenimientoContainer}>
             <Text
@@ -168,6 +200,7 @@ function MantenimientoList() {
 
 const styles = StyleSheet.create({
   actualVehiculo: {
+    padding: 8,
     textAlign: 'center',
     fontSize: 18,
     fontWeight: 'bold',

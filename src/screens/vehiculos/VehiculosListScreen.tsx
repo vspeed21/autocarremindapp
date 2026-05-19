@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+
 import { LoadingSpinner } from '@/src/components/shared';
 import { Vehiculo as IVehiculo } from '@/src/interfaces/vehiculos';
 import { cerrarSesion, saveItem } from '@/src/services';
@@ -37,6 +38,7 @@ function VehiculosListScreen() {
 
   if (isLoading) {
     return <LoadingSpinner msg1='Obteniendo Vehículos...' msg2='Por favor espere' />
+    // return <SimpleSkeleton />
   }
 
   return (
@@ -47,6 +49,12 @@ function VehiculosListScreen() {
         vehicleEditar={vehiculoEditar}
         setVehicleEditar={setVehiculoEditar}
       />
+
+      {vehiculosList.length ? (
+        <Text style={{ textAlign: 'center', paddingBlock: 18, fontSize: 14, fontWeight: 'bold' }}>
+          Tienes {vehiculosList.length} {vehiculosList.length === 1 ? 'vehículo registrado' : 'vehículos registrados'} en tu garaje
+        </Text>
+      ) : null}
 
       <View>
         <FlatList
@@ -64,8 +72,8 @@ function VehiculosListScreen() {
 
               }}
               onPress={async () => {
-                router.push({ pathname: '/mantenimientos', params: { vehicleId: item.id } });
                 await saveItem({ key: 'vehiculo', json: true, value: item });
+                router.push({ pathname: '/mantenimientos', params: { vehicleId: item.id } });
               }}
             >
               <Vehiculo vehiculo={item} />

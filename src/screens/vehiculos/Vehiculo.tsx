@@ -58,6 +58,15 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 10,
     marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.40,
+    shadowRadius: 4.65,
+
+    elevation: 15,
   },
   placa: {
     fontWeight: 'bold',
