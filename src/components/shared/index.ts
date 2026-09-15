@@ -3,6 +3,7 @@ import AppBrand from './AppBrand';
 import LoadingSpinner from './LoadingSpinner';
 import MicroCopy from './MicroCopy';
 import Overlay from './Overlay';
+import PlaceholderView from './PlaceholderView';
 
 export {
   //
@@ -12,6 +13,9 @@ export {
   //
   MicroCopy,
   // 
-  Overlay
+  Overlay,
+
+  //
+  PlaceholderView
 };
 

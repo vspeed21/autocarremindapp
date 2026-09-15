@@ -10,7 +10,6 @@ export async function crearVehiculo(body: any) {
     const { data } = await apiClient.post(`${BASE_URL}`, body, config);
     return data;
   } catch (error: any) {
-    console.log(error.response.data);
     return error.response.data;
   }
 }
@@ -21,7 +20,6 @@ export async function obtenerVehiculos() {
     const { data } = await apiClient(`${BASE_URL}`, config);
     return data;
   } catch (error: any) {
-    console.log(error.response.data);
     return error.response.data;
   }
 }
@@ -32,7 +30,6 @@ export async function actualizarVehiculo(body: any) {
     const { data } = await apiClient.put(`${BASE_URL}/${body.id}`, body, config);
     return data;
   } catch (error: any) {
-    console.log(error.response.data);
     return error.response.data;
   }
 }

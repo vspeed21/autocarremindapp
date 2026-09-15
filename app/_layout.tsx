@@ -24,22 +24,26 @@ export default function RootLayout() {
 
         {/* Private Routes */}
         <Stack.Screen
-          name="vehiculos/index"
+          name="(tabs)"
           options={{
-            headerTitle: 'Mí garaje'
+            headerShown: false,
           }}
         />
 
         <Stack.Screen
-          name="mantenimientos/crear"
-          options={{
-            headerTitle: 'Agrega un mantenimiento'
-          }}
-        />
-        <Stack.Screen
           name='mantenimientos/index'
           options={{
             headerTitle: 'Lista de mantenimientos'
+          }}
+        />
+
+        <Stack.Screen
+          name="mantenimientos/crear/[id]"
+          options={{
+            headerTitle: 'Agregar mantenimientos',
+            contentStyle: {
+              backgroundColor: '#FFF'
+            }
           }}
         />
 

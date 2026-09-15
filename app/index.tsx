@@ -1,5 +1,5 @@
 import { LoadingSpinner } from '@/src/components/shared';
-import { getItem } from '@/src/services';
+import { getItem, getMe } from '@/src/services';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Image, View } from 'react-native';
@@ -11,9 +11,20 @@ export default function Index() {
     async function validarAuth() {
       const havetokenLS = await getItem({ key: 'token', json: false });
 
-      if (havetokenLS) {
-        router.replace('/vehiculos');
-      } else {
+      if (!havetokenLS) {
+        router.replace('/auth/login');
+        return;
+      }
+
+      // Valida el token contra el backend en vez de solo comprobar que exista.
+      try {
+        const sesion = await getMe();
+        if (sesion && sesion.code === 200 && !sesion.error) {
+          router.replace('/vehiculos');
+        } else {
+          router.replace('/auth/login');
+        }
+      } catch {
         router.replace('/auth/login');
       }
     }

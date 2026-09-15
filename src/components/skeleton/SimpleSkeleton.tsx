@@ -1,18 +1,14 @@
-import { StyleSheet } from 'react-native';
+import { View } from 'react-native';
 
-import { AutoSkeletonView } from 'react-native-auto-skeleton';
-
-import { Text } from 'react-native-paper';
+import { Skeleton } from 'moti/skeleton';
 
 function SimpleSkeleton() {
   return (
-    <AutoSkeletonView isLoading={true}>
-      <Text>HOLA</Text>
-    </AutoSkeletonView>
+    <View style={{ justifyContent: 'center', alignItems: 'center', marginBlock: 12 }}>
+      <Skeleton height={150} width='95%' colorMode='light' show={true}>
+      </Skeleton>
+    </View>
   )
 }
 
-
-const styles = StyleSheet.create({});
-
-export default SimpleSkeleton
+export default SimpleSkeleton;

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Keyboard, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Button, Text, TextInput } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, TextInput } from 'react-native-paper';
 
-import { AlertaMessage, AppBrand, MicroCopy, Overlay } from '@/src/components/shared';
+import { AlertaMessage, MicroCopy, Overlay } from '@/src/components/shared';
+import { esEmailValido } from '@/src/helpers';
 import { loginUser, saveItem } from '@/src/services';
 
 
@@ -20,10 +21,10 @@ function LoginScreen() {
 
   async function onPress() {
     try {
-      if (email.trim().includes(' ')) {
+      if (!esEmailValido(email)) {
         setAlerta({
           error: true,
-          message: 'Ingresa tu correo electrónico para continuar',
+          message: 'Ingresa un correo electrónico válido para continuar',
         });
         setTimeout(() => {
           setAlerta({ error: false, message: '' });
@@ -31,10 +32,10 @@ function LoginScreen() {
         return;
       }
 
-      if (password.trim().includes(' ')) {
+      if (!password || password.length < 8) {
         setAlerta({
           error: true,
-          message: 'No olvides ingresar tu contraseña',
+          message: 'La contraseña debe tener al menos 8 caracteres',
         });
         setTimeout(() => {
           setAlerta({ error: false, message: '' });
@@ -60,6 +61,9 @@ function LoginScreen() {
         message: data.message,
       });
       await saveItem({ key: 'token', value: data.token, json: false });
+      // La API no devuelve el email en /usuarios/info: se guarda al iniciar sesión.
+      await saveItem({ key: 'usuario_email', value: data.usuario?.email ?? email.toLowerCase(), json: false });
+      await saveItem({ key: 'usuario_nombre', value: data.usuario?.nombre ?? '', json: false });
 
       setIsLoading(false);
 
@@ -71,103 +75,181 @@ function LoginScreen() {
       }
 
 
-    } catch (error: any) {
-      console.log('error login');
-      console.log(error);
-
-      // setAlerta({
-      //   error: error.response.data.error,
-      //   message: error.response.data.message,
-      // });
+    } catch {
+      // Sin acción adicional.
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <SafeAreaView>
-
-      <Overlay
-        visible={isLoading}
-        message='Validando credenciales...'
-      />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.screen}
+    >
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View>
 
-          <AppBrand />
+        <View style={styles.container}>
 
-          <View style={styles.container}>
+          <Overlay
+            visible={isLoading}
+            message='Validando credenciales...'
+          />
 
-            <AlertaMessage
-              alerta={alerta}
-            />
-
-            <MicroCopy text='Ingresa tus datos para acceder a tu garaje' />
-            <TextInput
-              mode='flat'
-              label='Correo electrónico'
-              placeholder='Ingresa tu correo'
-              keyboardType='email-address'
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              left={<TextInput.Icon icon='email' size={25} />}
-              underlineColor='transparent'
-              activeUnderlineColor='transparent'
-              cursorColor='#6A51AE'
-            />
-
-            <TextInput
-              label='Contraseña'
-              secureTextEntry={!showPassword}
-              value={password}
-              style={styles.input}
-              onChangeText={setPassword}
-              underlineColor='transparent'
-              activeUnderlineColor='transparent'
-              cursorColor='#6A51AE'
-              left={<TextInput.Icon icon='lock' size={25} />}
-              right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
-            />
-
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBlock: 6 }}>
-              <TouchableOpacity onPress={() => router.replace('/auth/signup')} activeOpacity={0.7}>
-                <Text style={{ color: '#3b2c63', fontSize: 12 }}>¿No tienes una cuenta? Crea una</Text>
-              </TouchableOpacity>
-              {/* <Text style={{ color: 'blue', fontSize: 12 }}>¿Olvidaste la contraseña?</Text> */}
+          <LinearGradient
+            colors={['#1E3A8A', '#1D4ED8', '#DC2626']}
+            locations={[0, 0.6, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.hero}
+          >
+            <View style={styles.heroMark}>
+              <Text style={styles.heroMarkText}>ACR</Text>
             </View>
+            <Text style={styles.heroTitle}>Hola de nuevo</Text>
+            <Text style={styles.heroSubtitle}>Ingresa para abrir tu garaje y no perder ningún mantenimiento.</Text>
+          </LinearGradient>
 
-            <Button
-              mode='contained'
-              style={{ marginTop: 20, borderRadius: 12, paddingBlock: 4 }}
-              labelStyle={{ fontWeight: 'bold' }}
-              onPress={onPress}
-              disabled={isLoading}
-            >
-              Iniciar Sesión
-            </Button>
+          <AlertaMessage
+            alerta={alerta}
+          />
+
+          <MicroCopy text='Ingresa tus datos para acceder a tu garaje' />
+
+          <TextInput
+            mode='flat'
+            label='Correo electrónico'
+            placeholder='Ingresa tu correo'
+            keyboardType='email-address'
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            left={<TextInput.Icon icon='email' size={25} />}
+            underlineColor='transparent'
+            activeUnderlineColor='#1D4ED8'
+            cursorColor='#1D4ED8'
+            autoCapitalize='none'
+          />
+
+
+          <TextInput
+            label='Contraseña'
+            secureTextEntry={!showPassword}
+            value={password}
+            style={styles.input}
+            onChangeText={setPassword}
+            underlineColor='transparent'
+            activeUnderlineColor='#1D4ED8'
+            cursorColor='#1D4ED8'
+            left={<TextInput.Icon icon='lock' size={25} />}
+            right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
+          />
+
+          <View style={styles.linkRow}>
+            <TouchableOpacity onPress={() => router.replace('/auth/signup')} activeOpacity={0.7}>
+              <Text style={styles.link}>¿No tienes una cuenta? Crea una</Text>
+            </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            onPress={onPress}
+            disabled={isLoading}
+            activeOpacity={0.85}
+            style={[styles.buttonWrap, isLoading && styles.buttonDisabled]}
+          >
+            <LinearGradient
+              colors={['#1D4ED8', '#2563EB']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>Entrar a mi garaje</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
       </TouchableWithoutFeedback>
 
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#EDF1F7',
+  },
   container: {
     width: '90%',
     margin: 'auto',
-    height: 400,
-    justifyContent: 'center'
+    justifyContent: 'center',
+    flex: 1,
+  },
+  hero: {
+    borderRadius: 24,
+    padding: 22,
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  heroMark: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroMarkText: {
+    color: '#1D4ED8',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: 10,
+  },
+  heroSubtitle: {
+    color: '#D7E3F8',
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 4,
   },
   input: {
     marginBottom: 12,
     borderRadius: 12,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-  }
+    backgroundColor: '#F7F9FD',
+  },
+  linkRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBlock: 6,
+  },
+  link: {
+    color: '#1D4ED8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  buttonWrap: {
+    marginTop: 20,
+    borderRadius: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  button: {
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 15,
+  },
 });
 
 export default LoginScreen;

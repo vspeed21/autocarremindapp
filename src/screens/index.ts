@@ -1,8 +1,11 @@
+import MasInfoScreen from '@/src/screens/mas-info/MasInfoScreen';
 import { LoginScreen, SignUpScreen } from './auth';
-import MantenimientoList from './mantenimientos/MantenimientosList';
+import MantenimientoListScreen from './mantenimientos/MantenimientosList';
+// GRÁFICAS v2 — EN PAUSA, NO BORRAR: import GraficasScreen from './graficas/GraficasScreen';
 
 export {
   // Auth Routes
-  LoginScreen, MantenimientoList, SignUpScreen
+  LoginScreen, MantenimientoListScreen as MantenimientoList, MasInfoScreen, SignUpScreen,
+  // GRÁFICAS v2 — EN PAUSA: GraficasScreen
 };
 

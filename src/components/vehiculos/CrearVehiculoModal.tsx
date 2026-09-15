@@ -1,18 +1,19 @@
 import { AlertaMessage } from '@/src/components/shared';
+import { MarcaCatalogo, ModeloCatalogo, getItem, getMarcas, getModelos } from '@/src/services';
 import { actualizarVehiculo, crearVehiculo } from '@/src/services/api/vehiculoServices';
-import { usePathname } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { router, usePathname } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 import { Button, FAB, Portal, TextInput } from 'react-native-paper';
 import { Vehiculo } from '../../interfaces/vehiculos';
-import CrearMantenimientoInfoModal from '../mantenimientos/CrearMantenimientoModal';
 
 interface Props {
   showFormAddVehicle: boolean;
   setShowFormAddVehicle: (value: boolean) => void;
   setVehicleEditar: (value: Vehiculo) => void;
   vehicleEditar: Vehiculo | null;
+  unidad?: string;
 }
 
 const MARCAS = [
@@ -23,8 +24,6 @@ const MARCAS = [
   { id: 5, marca: 'Nissan' },
   { id: 6, marca: 'Hyundai' },
   { id: 7, marca: 'Kia' },
-  { id: 8, marca: 'Volkswagen' },
-  { id: 9, marca: 'BMW' },
   { id: 10, marca: 'Mazda' },
   { id: 11, marca: 'Peugeot' },
   { id: 12, marca: 'Subaru' },
@@ -118,30 +117,6 @@ const MODELOS = [
   { id: 69, id_marca: 7, nombre: 'Carens', year: 2023 },
   { id: 70, id_marca: 7, nombre: 'Stinger', year: 2021 },
 
-  // VOLKSWAGEN
-  { id: 71, id_marca: 8, nombre: 'Jetta', year: 2022 },
-  { id: 72, id_marca: 8, nombre: 'Golf', year: 2021 },
-  { id: 73, id_marca: 8, nombre: 'Passat', year: 2020 },
-  { id: 74, id_marca: 8, nombre: 'Tiguan', year: 2023 },
-  { id: 75, id_marca: 8, nombre: 'Polo', year: 2021 },
-  { id: 76, id_marca: 8, nombre: 'Touareg', year: 2022 },
-  { id: 77, id_marca: 8, nombre: 'Amarok', year: 2020 },
-  { id: 78, id_marca: 8, nombre: 'Arteon', year: 2021 },
-  { id: 79, id_marca: 8, nombre: 'T-Cross', year: 2023 },
-  { id: 80, id_marca: 8, nombre: 'Beetle', year: 2019 },
-
-  // BMW
-  { id: 81, id_marca: 9, nombre: 'Serie 3', year: 2022 },
-  { id: 82, id_marca: 9, nombre: 'Serie 5', year: 2021 },
-  { id: 83, id_marca: 9, nombre: 'Serie 7', year: 2023 },
-  { id: 84, id_marca: 9, nombre: 'X1', year: 2020 },
-  { id: 85, id_marca: 9, nombre: 'X3', year: 2021 },
-  { id: 86, id_marca: 9, nombre: 'X5', year: 2022 },
-  { id: 87, id_marca: 9, nombre: 'X6', year: 2023 },
-  { id: 88, id_marca: 9, nombre: 'i3', year: 2021 },
-  { id: 89, id_marca: 9, nombre: 'i8', year: 2020 },
-  { id: 90, id_marca: 9, nombre: 'Z4', year: 2022 },
-
   // MAZDA
   { id: 91, id_marca: 10, nombre: 'Mazda 2', year: 2020 },
   { id: 92, id_marca: 10, nombre: 'Mazda 3', year: 2022 },
@@ -217,7 +192,7 @@ const MODELOS = [
 ];
 
 
-function CrearVehiculoModal({ setShowFormAddVehicle, showFormAddVehicle, vehicleEditar, setVehicleEditar }: Props) {
+function CrearVehiculoModal({ setShowFormAddVehicle, showFormAddVehicle, vehicleEditar, setVehicleEditar, unidad = 'kilometros' }: Props) {
 
   const pathname = usePathname();
 
@@ -229,17 +204,31 @@ function CrearVehiculoModal({ setShowFormAddVehicle, showFormAddVehicle, vehicle
     });
   }
 
-  return (
+  return pathname === '/vehiculos' || pathname === '/mantenimientos' ? (
     <View>
       <Portal>
         <FAB
           icon="plus"
-          style={{ width: pathname === '/vehiculos' || pathname === '/' ? 170 : 200, position: 'absolute', bottom: 70, right: 10 }}
-          onPress={() => setShowFormAddVehicle(true)}
-          label={pathname === '/vehiculos' || pathname === '/' ? 'Agregar Vehículo' : 'Agregar Mantenimiento'}
+          color="#FFFFFF"
+          style={pathname === '/vehiculos' ? styles.fabVehiculos : styles.fabMantenimiento}
+          onPress={async () => {
+            if (pathname === '/vehiculos') {
+              setShowFormAddVehicle(true);
+            } else {
+              const vehiculoLS = await getItem({ key: 'vehiculo', json: true });
+
+              router.push({
+                pathname: '/mantenimientos/crear/[id]',
+                params: {
+                  id: vehiculoLS.id,
+                }
+              });
+            }
+          }}
+          label={pathname === '/vehiculos' ? 'Agregar Vehículo' : 'Mantenimiento'}
           mode='flat'
-          theme={{ colors: { primary: '#6200ee' } }}
-          accessibilityLabel={pathname === '/vehiculos' || pathname === '/' ? 'Agregar Vehículo' : 'Agregar Mantenimiento'}
+          theme={{ colors: { primary: '#1D4ED8', primaryContainer: '#1D4ED8', onPrimaryContainer: '#FFFFFF' } }}
+          accessibilityLabel={pathname === '/vehiculos' ? 'Agregar Vehículo' : 'Agregar Mantenimiento'}
           accessibilityRole="button"
         />
       </Portal>
@@ -250,50 +239,66 @@ function CrearVehiculoModal({ setShowFormAddVehicle, showFormAddVehicle, vehicle
           onDismiss={closeModalAddVehiculo}
           animationType="slide"
         >
-          <View style={styles.statusBarProtection} />
+          <View style={styles.modalWrap}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={styles.modalKeyboard}
+            >
+              <ScrollView
+                contentContainerStyle={styles.modalScroll}
+                keyboardShouldPersistTaps='handled'
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={styles.title}>
+                  {vehicleEditar?.id ? 'Editar información' : 'Agregar vehículo'}
+                </Text>
 
-          <Text style={styles.title}>
-            {vehicleEditar?.id ? 'Editar información' : pathname === '/mantenimientos' ? 'Agregar Mantenimiento' : 'Agregar vehículo'}
-          </Text>
+                <CreateVehicleModalInfoModal
+                  setVehicleEditar={setVehicleEditar}
+                  vehicleEditar={vehicleEditar}
+                  setShowFormAddVehicle={setShowFormAddVehicle}
+                  unidad={unidad}
+                />
+              </ScrollView>
+            </KeyboardAvoidingView>
 
-          <Button
-            onPress={closeModalAddVehiculo}
-            style={{ position: 'absolute', top: 20, right: 5 }}
-          >
-            <Text style={{ fontSize: 25 }}>X</Text>
-          </Button>
-
-
-          {pathname === '/vehiculos' || pathname === '/' ? (
-            <CreateVehicleModalInfoModal
-              setVehicleEditar={setVehicleEditar}
-              vehicleEditar={vehicleEditar}
-              setShowFormAddVehicle={setShowFormAddVehicle}
-            />
-          ) : (
-            <CrearMantenimientoInfoModal setShowFormAddVehicle={setShowFormAddVehicle} />
-          )}
+            <Button
+              onPress={closeModalAddVehiculo}
+              style={styles.modalClose}
+            >
+              <Text style={styles.modalCloseText}>X</Text>
+            </Button>
+          </View>
         </Modal>
       </Portal>
     </View>
-  );
+  ) : null;
 }
 
 interface PropsModalInfo {
   vehicleEditar: any | null,
   setVehicleEditar?: (vehicle: any | null) => void
   setShowFormAddVehicle: (value: boolean) => void
+  unidad?: string
 }
 
-function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: PropsModalInfo) {
+function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, unidad = 'kilometros' }: PropsModalInfo) {
+  const etiquetaDistancia = unidad === 'millas' ? 'MI' : 'KM';
+
+  interface MarcaLocal { id: number | string; marca: string; }
+  interface ModeloLocal { id: number | string; id_marca: number | string; nombre: string; year: number; }
 
   const [marca, setMarca] = useState('');
   const [marcaName, setMarcaName] = useState('Toyota');
   const [modelo, setModelo] = useState('');
+  const [marcas, setMarcas] = useState<MarcaLocal[]>(MARCAS);
+  const [todosModelos, setTodosModelos] = useState<ModeloLocal[]>(MODELOS);
   const [year, setYear] = useState('');
   const [placa, setPlaca] = useState('');
   const [kilometraje, setKilometraje] = useState('');
-  const [modelos, setModelos] = useState(MODELOS.filter(model => model.id_marca.toString() === '1'));
+  const [modelos, setModelos] = useState<ModeloLocal[]>(MODELOS.filter(model => model.id_marca.toString() === '1'));
+  const marcaRef = useRef(marca);
+  marcaRef.current = marca;
 
   const [alerta, setAlerta] = useState({ message: '', error: false });
 
@@ -314,8 +319,6 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: P
 
   async function onPress() {
     setIsLoading(true);
-    // cerrarSesion();
-    // return;
 
     const body = { id: vehicleEditar?.id, marca: marcaName, modelo, year, placa, kilometraje }
 
@@ -353,8 +356,7 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: P
         vehicleEditar.year = '';
         vehicleEditar.kilometraje = '';
 
-      } catch (error: any) {
-        console.log(error.response.data);
+      } catch {
         setIsLoading(false);
       }
       return;
@@ -373,7 +375,6 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: P
       setShowFormAddVehicle(false);
 
     } catch (error: any) {
-      console.log(error.response.data);
       setAlerta({ message: error.response.data.message, error: error.response.data.error });
     } finally {
       setIsLoading(false);
@@ -382,8 +383,35 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: P
   }
 
   useEffect(() => {
+    getCatalogoVehiculos();
+    async function getCatalogoVehiculos() {
+      // Marcas y modelos desde el backend; si falla, se usa el local de respaldo.
+      const [respMarcas, respModelos] = await Promise.all([getMarcas(), getModelos()]);
+      let listaMarcas: MarcaLocal[] = MARCAS;
+      if (respMarcas && Array.isArray(respMarcas.data) && respMarcas.data.length > 0) {
+        listaMarcas = (respMarcas.data as MarcaCatalogo[]).map((m) => ({ id: m.id, marca: m.nombre }));
+        setMarcas(listaMarcas);
+      }
+      if (respModelos && Array.isArray(respModelos.data) && respModelos.data.length > 0) {
+        setTodosModelos(
+          (respModelos.data as ModeloCatalogo[]).map((m) => ({
+            id: m.id,
+            id_marca: m.marcaId,
+            nombre: m.nombre,
+            year: m.year ?? new Date().getFullYear(),
+          }))
+        );
+      }
+      // Si la marca actual no existe en la lista, seleccionar la primera.
+      if (listaMarcas.length > 0 && !listaMarcas.some((m) => String(m.id) === String(marcaRef.current))) {
+        setMarca(String(listaMarcas[0].id));
+        setMarcaName(listaMarcas[0].marca);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (vehicleEditar) {
-      // console.log('Editando vehículo:', vehicleEditar);
       setMarca(vehicleEditar.marca.toString());
       setModelo(vehicleEditar.modelo);
       setYear(vehicleEditar.year.toString());
@@ -401,9 +429,9 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: P
   }, [vehicleEditar]);
 
   useEffect(() => {
-    const modelosFiltrados = MODELOS.filter(model => model.id_marca.toString() === marca.toString());
+    const modelosFiltrados = todosModelos.filter(model => model.id_marca.toString() === marca.toString());
     setModelos(modelosFiltrados);
-  }, [marca]);
+  }, [marca, todosModelos]);
 
   return (
     <View>
@@ -419,13 +447,18 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: P
       {!vehicleEditar?.id ? (
         <>
           <Dropdown
-            style={[styles.dropdown]}
+            style={styles.dropdown}
+            placeholderStyle={styles.dropdownPlaceholder}
+            selectedTextStyle={styles.dropdownSelectedText}
+            inputSearchStyle={styles.dropdownSearch}
+            containerStyle={styles.dropdownList}
+            itemTextStyle={styles.dropdownItemText}
+            iconColor='#1D4ED8'
             placeholder='Selecciona la marca del vehículo *'
             searchPlaceholder='Buscar marca'
-            data={MARCAS}
+            data={marcas}
             labelField='marca'
             valueField='id_marca'
-            // value={marca}
             onChange={item => {
               setMarca(item.id);
               setMarcaName(item.marca);
@@ -435,7 +468,13 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: P
           />
 
           <Dropdown
-            style={[styles.dropdown]}
+            style={styles.dropdown}
+            placeholderStyle={styles.dropdownPlaceholder}
+            selectedTextStyle={styles.dropdownSelectedText}
+            inputSearchStyle={styles.dropdownSearch}
+            containerStyle={styles.dropdownList}
+            itemTextStyle={styles.dropdownItemText}
+            iconColor='#1D4ED8'
             placeholder='Selecciona el modelo del vehículo *'
             searchPlaceholder='Buscar modelo'
             data={modelos} // Filtrar por marca seleccionada
@@ -455,41 +494,51 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: P
         placeholder='Año del vehículo *'
         label='Año *'
         keyboardType='numeric'
-        mode='outlined'
         style={styles.input}
         maxLength={4}
         value={year}
         onChangeText={text => setYear(text)}
         disabled={isLoading}
+        underlineColor='transparent'
+        activeUnderlineColor='#1D4ED8'
+        cursorColor='#1D4ED8'
+        left={<TextInput.Icon icon='calendar' />}
       />
 
       <TextInput
         placeholder='ABC 1234'
         label='Placa *'
-        mode='outlined'
         style={styles.input}
         value={placa.toUpperCase()}
         autoCapitalize='characters'
         maxLength={8}
         onChangeText={text => validarPlaca(text)}
         disabled={isLoading || vehicleEditar?.id}
+        underlineColor='transparent'
+        activeUnderlineColor='#1D4ED8'
+        cursorColor='#1D4ED8'
+        left={<TextInput.Icon icon='card-account-details' />}
       />
 
       <TextInput
-        placeholder='Kilometraje del vehículo *'
-        label='Kilometraje *'
+        placeholder={`Kilometraje del vehículo (${etiquetaDistancia}) *`}
+        label={`Kilometraje (${etiquetaDistancia}) *`}
         keyboardType='numeric'
-        mode='outlined'
         style={styles.input}
         value={kilometraje}
         onChangeText={text => setKilometraje(text)}
         disabled={isLoading}
+        underlineColor='transparent'
+        activeUnderlineColor='#1D4ED8'
+        cursorColor='#1D4ED8'
+        left={<TextInput.Icon icon='speedometer' />}
       />
 
       <Button
         mode="contained"
         onPress={onPress}
-        style={{ margin: 10 }}
+        style={styles.submit}
+        labelStyle={styles.submitLabel}
         disabled={isLoading}
       >
         {vehicleEditar?.id ? 'Actualizar Información del vehículo' : 'Agregar Vehículo'}
@@ -501,18 +550,43 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle }: P
 }
 
 
-
-
 const styles = StyleSheet.create({
+  modalWrap: {
+    flex: 1,
+    backgroundColor: '#EDF1F7',
+  },
+  modalKeyboard: {
+    flex: 1,
+  },
+  modalScroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    paddingVertical: 24,
+    paddingHorizontal: 6,
+  },
+  modalClose: {
+    position: 'absolute',
+    top: 20,
+    right: 5,
+  },
+  modalCloseText: {
+    fontSize: 25,
+    color: '#0F2A5C',
+    fontWeight: '900',
+  },
   microcopy: {
-    color: '#666',
+    color: '#5B6B7F',
     fontSize: 14,
     textAlign: 'center',
   },
 
   input: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#F7F9FD',
     margin: 10,
+    borderRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
 
   inputSeparador: {
@@ -531,17 +605,62 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: '900',
     textAlign: 'center',
+    color: '#0F2A5C',
+  },
+  submit: {
+    margin: 10,
+    borderRadius: 16,
+    backgroundColor: '#1D4ED8',
+  },
+  submitLabel: {
+    fontWeight: '800',
+  },
+  fabVehiculos: {
+    width: 170,
+    position: 'absolute',
+    bottom: 70,
+    right: 10,
+    backgroundColor: '#1D4ED8',
+  },
+  fabMantenimiento: {
+    width: 200,
+    position: 'absolute',
+    bottom: 70,
+    right: 10,
+    backgroundColor: '#1D4ED8',
   },
   dropdown: {
-    height: 50,
-    borderColor: 'gray',
-    borderWidth: 0.5,
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    height: 54,
+    borderColor: '#1D4ED8',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 12,
     margin: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#F7F9FD',
+  },
+  dropdownPlaceholder: {
+    color: '#5B6B7F',
+    fontSize: 14,
+  },
+  dropdownSelectedText: {
+    color: '#0F2A5C',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  dropdownSearch: {
+    borderColor: '#D3DCE9',
+    borderRadius: 10,
+    color: '#0F2A5C',
+  },
+  dropdownList: {
+    borderRadius: 14,
+    borderColor: '#D3DCE9',
+  },
+  dropdownItemText: {
+    color: '#0F2A5C',
+    fontSize: 14,
   },
   separador: {
     marginVertical: 20,

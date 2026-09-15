@@ -14,13 +14,24 @@ export interface MantenimientoTipo {
   intervaloFecha: number
 }
 
+/**
+ * Ítem del catálogo global (colección mantenimientos_lista en el backend).
+ */
+export interface MantenimientoCatalogo {
+  id?: string
+  nombre: string
+  intervaloFechaDias: number
+  intervaloKm: number
+  intervaloMilla: number
+}
+
 export interface Mantenimiento {
   id: string;
   tipo: string;
   nombre: string;
-  fecha: Date;
+  fecha: fechaFirebase;
   kilometraje_actual: number;
-  fecha_recordatorio: string;
+  fecha_recordatorio: fechaFirebase;
   km_recordatorio: number;
   tipo_repuestos: string;
   costo_repuestos: number;
