@@ -34,6 +34,10 @@ yarn-error.*
 .env*.local
 .env
 
+# Firebase: duplicados locales de google-services (no rastrear)
+google-services (1).json
+google-services (2).json
+
 # typescript
 *.tsbuildinfo
 
