@@ -12,6 +12,7 @@ export interface MantenimientoTipo {
   nombre: string
   intervaloKm: number
   intervaloFecha: number
+  aplicaA?: string
 }
 
 /**
@@ -23,6 +24,7 @@ export interface MantenimientoCatalogo {
   intervaloFechaDias: number
   intervaloKm: number
   intervaloMilla: number
+  aplicaA?: string
 }
 
 export interface Mantenimiento {

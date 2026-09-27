@@ -8,97 +8,22 @@ import { Button, Checkbox, TextInput } from 'react-native-paper';
 
 import { AlertaMessage, MicroCopy, PlaceholderView } from '@/src/components/shared';
 import { SimpleSkeleton } from '@/src/components/skeleton';
-import { etiquetaDistancia, fechaToDate, formatearMoneda } from '@/src/helpers';
+import { etiquetaDistancia, formatearMoneda } from '@/src/helpers';
 import { Vehiculo } from '@/src/interfaces/vehiculos';
 import type { Tanqueada } from '@/src/services';
 import { agregarTanqueada, eliminarTanqueada, getCurrentUserInfo, getTanqueadas, obtenerVehiculos } from '@/src/services';
-
-
-// ─── Constantes de negocio ───────────────────────────────────────
-/** Fracción del promedio bajo la cual se alerta (85%). */
-const UMBRAL_ALERTA_BAJO = 0.85;
-/** Mínimo de tanqueadas válidas para mostrar la alerta de bajo rendimiento. */
-const MINIMO_PARA_ALERTA = 3;
-
-
-interface OpcionVehiculo {
-  id: string;
-  etiqueta: string;
-}
-
-interface ResumenRendimiento {
-  promedio: number;
-  validas: number;
-  ultimo: number | null;
-}
-
-/**
- * Tope de cordura del rendimiento según unidad (cubre hasta motos pequeñas).
- * Valores mayores se consideran error de digitación y se ignoran.
- */
-function maxRendimiento(unidad: string): number {
-  return unidad === 'millas' ? 40 : 70;
-}
-
-/** Ordena tanqueadas por KM ascendente sin mutar el arreglo original. */
-function ordenarPorKm(tanqueadas: Tanqueada[]): Tanqueada[] {
-  return [...tanqueadas].sort((a, b) => a.km - b.km);
-}
-
-/**
- * Rendimiento de UNA tanqueada contra la anterior por KM:
- * (kmActual - kmAnterior) / litros. Devuelve null si no es calculable
- * (primera, parcial anterior inválida, KM que no avanza o valor absurdo).
- */
-function rendimientoDeUna(previo: Tanqueada | undefined, actual: Tanqueada, unidad: string): number | null {
-  if (!actual.lleno || !previo) return null;
-  const kmRecorridos = actual.km - previo.km;
-  const litros = Number(actual.litros) || 0;
-  if (kmRecorridos <= 0 || litros <= 0) return null;
-  const rendimiento = kmRecorridos / litros;
-  if (rendimiento >= maxRendimiento(unidad)) return null;
-  return rendimiento;
-}
-
-/**
- * Promedio del vehículo con el método de tanque lleno:
- * promedia solo las tanqueadas llenas con anterior válido.
- */
-function rendimientoPromedio(tanqueadas: Tanqueada[], unidad: string): ResumenRendimiento {
-  const ordenadas = ordenarPorKm(tanqueadas);
-  let suma = 0;
-  let validas = 0;
-  let ultimo: number | null = null;
-
-  for (let i = 1; i < ordenadas.length; i++) {
-    const rendimiento = rendimientoDeUna(ordenadas[i - 1], ordenadas[i], unidad);
-    if (rendimiento === null) continue;
-    suma += rendimiento;
-    validas++;
-    ultimo = rendimiento;
-  }
-
-  return { promedio: validas ? suma / validas : 0, validas, ultimo };
-}
-
-/** KM totales recorridos entre la primera y la última tanqueada. */
-function kmRecorridos(tanqueadas: Tanqueada[]): number {
-  if (tanqueadas.length < 2) return 0;
-  const kms = tanqueadas.map((t) => t.km);
-  return Math.max(...kms) - Math.min(...kms);
-}
-
-/** Suma de costos de una lista de tanqueadas. */
-function gastoTotal(tanqueadas: Tanqueada[]): number {
-  return tanqueadas.reduce((acc, t) => acc + (Number(t.costo) || 0), 0);
-}
-
-/** Formatea una fecha de Firestore/ISO a texto corto es-HN. */
-function formatearFecha(fecha: Tanqueada['fecha']): string {
-  const d = fechaToDate(fecha);
-  if (!d) return '—';
-  return d.toLocaleDateString('es-HN', { day: '2-digit', month: 'short', year: 'numeric' });
-}
+import {
+  formatearFecha,
+  formatearFechaHora,
+  gastoTotal,
+  kmRecorridos,
+  maxRendimiento,
+  MINIMO_PARA_ALERTA,
+  rendimientoPromedio,
+  textoRendimientoFila,
+  UMBRAL_ALERTA_BAJO,
+} from './combustibleHelpers';
+import type { OpcionVehiculo } from './combustibleHelpers';
 
 
 function CombustibleScreen() {
@@ -301,14 +226,6 @@ function CombustibleScreen() {
     recargar();
   }
 
-  // ── Texto del chip de rendimiento de una fila del historial ──
-  function textoRendimientoFila(item: Tanqueada): string {
-    const anteriores = tanqueadas.filter((t) => t.km < item.km).sort((a, b) => b.km - a.km);
-    const rendimiento = rendimientoDeUna(anteriores[0], item, unidad);
-    if (rendimiento === null) return '—';
-    return `${rendimiento.toFixed(1)} ${unidadVolumen}`;
-  }
-
   // ── Render: estados de carga y vacío ──
   if (isLoading) {
     return (
@@ -474,9 +391,9 @@ function CombustibleScreen() {
                 >
                   <View style={styles.filaTop}>
                     <Text style={[styles.chip, item.lleno ? styles.chipLleno : styles.chipParcial]}>
-                      {item.lleno ? textoRendimientoFila(item) : 'Parcial'}
+                      {item.lleno ? textoRendimientoFila(item, tanqueadas, unidad) : 'Parcial'}
                     </Text>
-                    <Text style={styles.filaFecha}>{formatearFecha(item.fecha)}</Text>
+                    <Text style={styles.filaFecha}>{formatearFechaHora(item)}</Text>
                   </View>
                   <Text style={styles.filaTitulo}>{item.litros} L · {formatearMoneda(item.costo)}</Text>
                   <Text style={styles.filaDetalle}>{Number(item.km).toLocaleString()} {unidadEtiqueta}{item.lleno ? ' · tanque lleno' : ''}</Text>

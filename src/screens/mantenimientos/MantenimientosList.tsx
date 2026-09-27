@@ -1,67 +1,21 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 
 
-import { SimpleSkeleton } from '@/src/components/skeleton';
 import { AlertaMessage } from '@/src/components/shared';
+import { SimpleSkeleton } from '@/src/components/skeleton';
+import { estadoMantenimiento, fechaToDate, formatearDistancia, formatearMoneda, gastoTotalMantenimientos } from '@/src/helpers';
 import { Mantenimiento } from '@/src/interfaces/mantenimientos';
 import { Vehiculo } from '@/src/interfaces/vehiculos';
-// GRÁFICAS v2: re-agregar fechaToDate a este import al reactivar las gráficas (NO BORRAR).
-import { estadoMantenimiento, formatearDistancia, formatearMoneda, gastoTotalMantenimientos } from '@/src/helpers';
 import { eliminarMantenimiento, getCatalogoMantenimientos, getCurrentUserInfo, getItem, getMantenimientos, saveItem } from '@/src/services';
 import formatFirebaseDate from '@/src/utils/formatFirebaseDate';
 
 import { Dropdown } from 'react-native-element-dropdown';
 import { Divider, Icon } from 'react-native-paper';
 
-const hoy = new Date();
-
-/*
- * GRÁFICAS v2 — EN PAUSA, NO BORRAR.
 const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
- * FIN GRÁFICAS v2
- */
-
-const sumarMeses = (fecha: Date, meses: number) => {
-  const nuevaFecha = new Date(fecha);
-  nuevaFecha.setMonth(nuevaFecha.getMonth() + meses);
-  return nuevaFecha;
-};
-
-const MANTENIMIENTOS_VEHICLE = [
-  { nombre: "Cambio de aceite de motor", intervaloKm: 5000, proximoCambio: sumarMeses(hoy, 6) },
-  { nombre: "Cambio de filtro de aceite", intervaloKm: 5000, proximoCambio: sumarMeses(hoy, 6) },
-  { nombre: "Cambio de filtro de aire", intervaloKm: 10000, proximoCambio: sumarMeses(hoy, 12) },
-  { nombre: "Cambio de filtro de combustible", intervaloKm: 20000, proximoCambio: sumarMeses(hoy, 24) },
-  { nombre: "Cambio de filtro de cabina", intervaloKm: 15000, proximoCambio: sumarMeses(hoy, 18) },
-  { nombre: "Revisión y cambio de bujías", intervaloKm: 30000, proximoCambio: sumarMeses(hoy, 36) },
-  { nombre: "Cambio de líquido de frenos", intervaloKm: 30000, proximoCambio: sumarMeses(hoy, 36) },
-  { nombre: "Cambio de líquido de dirección hidráulica", intervaloKm: 40000, proximoCambio: sumarMeses(hoy, 48) },
-  { nombre: "Cambio de líquido refrigerante", intervaloKm: 40000, proximoCambio: sumarMeses(hoy, 48) },
-  { nombre: "Alineación y balanceo", intervaloKm: 10000, proximoCambio: sumarMeses(hoy, 12) },
-  { nombre: "Rotación de llantas", intervaloKm: 10000, proximoCambio: sumarMeses(hoy, 12) },
-  { nombre: "Inspección de frenos (pastillas/discos)", intervaloKm: 15000, proximoCambio: sumarMeses(hoy, 18) },
-  { nombre: "Cambio de pastillas de freno", intervaloKm: 25000, proximoCambio: sumarMeses(hoy, 30) },
-  { nombre: "Cambio de discos de freno", intervaloKm: 50000, proximoCambio: sumarMeses(hoy, 60) },
-  { nombre: "Revisión del sistema de suspensión", intervaloKm: 20000, proximoCambio: sumarMeses(hoy, 24) },
-  { nombre: "Cambio de amortiguadores", intervaloKm: 60000, proximoCambio: sumarMeses(hoy, 72) },
-  { nombre: "Revisión del sistema de escape", intervaloKm: 20000, proximoCambio: sumarMeses(hoy, 24) },
-  { nombre: "Inspección del sistema eléctrico", intervaloKm: 20000, proximoCambio: sumarMeses(hoy, 24) },
-  { nombre: "Revisión del sistema de aire acondicionado", intervaloKm: 15000, proximoCambio: sumarMeses(hoy, 18) },
-  { nombre: "Revisión de correas (alternador, distribución)", intervaloKm: 40000, proximoCambio: sumarMeses(hoy, 48) },
-  { nombre: "Cambio de correa de distribución", intervaloKm: 80000, proximoCambio: sumarMeses(hoy, 96) },
-  { nombre: "Cambio de batería", intervaloMeses: 36, proximoCambio: sumarMeses(hoy, 36) },
-  { nombre: "Cambio de llantas", intervaloKm: 50000, proximoCambio: sumarMeses(hoy, 60) },
-  { nombre: "Lavado de inyectores", intervaloKm: 30000, proximoCambio: sumarMeses(hoy, 36) },
-  { nombre: "Inspección de fugas de fluidos", intervaloKm: 10000, proximoCambio: sumarMeses(hoy, 12) },
-  { nombre: "Limpieza del radiador", intervaloKm: 40000, proximoCambio: sumarMeses(hoy, 48) },
-  { nombre: "Revisión de luces y bombillas", intervaloKm: 10000, proximoCambio: sumarMeses(hoy, 12) },
-  { nombre: "Revisión de sensores (oxígeno, temperatura)", intervaloKm: 30000, proximoCambio: sumarMeses(hoy, 36) },
-  { nombre: "Revisión del cuerpo de aceleración", intervaloKm: 30000, proximoCambio: sumarMeses(hoy, 36) },
-  { nombre: "Revisión del sistema de transmisión", intervaloKm: 40000, proximoCambio: sumarMeses(hoy, 48) }
-];
 
 function capitalizar(texto: string) {
   if (!texto) return '—';
@@ -70,9 +24,8 @@ function capitalizar(texto: string) {
 
 function MantenimientoListScreen() {
   const [selectedMantenimiento, setSelectedMantenimiento] = useState<string>('');
-  const [catalogo, setCatalogo] = useState<{ nombre: string }[]>(MANTENIMIENTOS_VEHICLE);
-  // GRÁFICAS v2 — EN PAUSA, NO BORRAR:
-  // const [mostrarGrafica, setMostrarGrafica] = useState<boolean>(false);
+  const [catalogo, setCatalogo] = useState<{ nombre: string }[]>([]);
+  const [mostrarGrafica, setMostrarGrafica] = useState<boolean>(false);
   const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [unidad, setUnidad] = useState<string>('kilometros');
@@ -208,8 +161,6 @@ function MantenimientoListScreen() {
     return estados[0]?.texto ?? '—';
   })();
 
-  /*
-   * GRÁFICAS v2 — EN PAUSA, NO BORRAR.
   const gastosMensuales = (() => {
     const actual = new Date();
     const meses: { key: string; label: string; total: number }[] = [];
@@ -230,8 +181,6 @@ function MantenimientoListScreen() {
     return meses;
   })();
   const maxGastoMes = Math.max(...gastosMensuales.map((x) => x.total), 1);
-   * FIN GRÁFICAS v2
-   */
 
   if (isLoading) {
     return (
@@ -267,10 +216,6 @@ function MantenimientoListScreen() {
         <>
           <Text style={styles.actualVehiculo}>{vehiculo.marca} {vehiculo.modelo} - {vehiculo.placa}</Text>
           <Text style={styles.hint}>Mantén presionado un mantenimiento para editarlo o eliminarlo</Text>
-          {/*
-            GRÁFICAS v2 — EN PAUSA, NO BORRAR.
-            Mini gráfica mensual por vehículo. Para reactivar: quitar este comentario
-            y restaurar el estado mostrarGrafica, MESES_CORTO, gastosMensuales y fechaToDate.
           <Text style={styles.toggleGrafica} onPress={() => setMostrarGrafica((v) => !v)}>
             {mostrarGrafica ? 'Ocultar gráfica mensual ▲' : 'Ver gráfica mensual ▼'}
           </Text>
@@ -288,18 +233,16 @@ function MantenimientoListScreen() {
               ))}
             </View>
           ) : null}
-          FIN GRÁFICAS v2
-          */}
-            <Dropdown
-              style={styles.dropdown}
-              placeholderStyle={styles.dropdownPlaceholder}
-              selectedTextStyle={styles.dropdownSelectedText}
-              inputSearchStyle={styles.dropdownSearch}
-              containerStyle={styles.dropdownList}
-              itemTextStyle={styles.dropdownItemText}
-              iconColor='#1D4ED8'
-              placeholder='Filtrar mantenimientos'
-              data={catalogo}
+          <Dropdown
+            style={styles.dropdown}
+            placeholderStyle={styles.dropdownPlaceholder}
+            selectedTextStyle={styles.dropdownSelectedText}
+            inputSearchStyle={styles.dropdownSearch}
+            containerStyle={styles.dropdownList}
+            itemTextStyle={styles.dropdownItemText}
+            iconColor='#1D4ED8'
+            placeholder='Filtrar mantenimientos'
+            data={catalogo}
             search
             maxHeight={400}
             labelField='nombre'
@@ -370,53 +313,53 @@ function MantenimientoListScreen() {
       <AlertaMessage alerta={alerta} />
 
       {mantenimientosFiltrados.map((item) => {
-          const estado = estadoMantenimiento(item.fecha_recordatorio);
-          const total = (Number(item.costo_manoobra) || 0) + (Number(item.costo_repuestos) || 0);
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.mantenimientoContainer}
-              activeOpacity={0.95}
-              delayLongPress={400}
-              onLongPress={() => onLongPressMantenimiento(item)}
-            >
-              <View style={styles.chipsRow}>
-                <Text style={[styles.estadoChip, estado.urgente ? styles.estadoUrgente : styles.estadoOk]}>
-                  {estado.texto}
-                </Text>
+        const estado = estadoMantenimiento(item.fecha_recordatorio);
+        const total = (Number(item.costo_manoobra) || 0) + (Number(item.costo_repuestos) || 0);
+        return (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.mantenimientoContainer}
+            activeOpacity={0.95}
+            delayLongPress={400}
+            onLongPress={() => onLongPressMantenimiento(item)}
+          >
+            <View style={styles.chipsRow}>
+              <Text style={[styles.estadoChip, estado.urgente ? styles.estadoUrgente : styles.estadoOk]}>
+                {estado.texto}
+              </Text>
+            </View>
+            <Text style={styles.nombre}>{item.nombre}</Text>
+
+            <View style={styles.columns}>
+              <View style={styles.column}>
+                <Text style={styles.columnTitle}>Realizado</Text>
+                <Text style={styles.itemMantenimiento}> 🗓️ {formatFirebaseDate(item.fecha, true)}</Text>
+                <Text style={styles.itemMantenimiento}>⏲️ {formatearDistancia(item.kilometraje_actual, unidad)} </Text>
               </View>
-              <Text style={styles.nombre}>{item.nombre}</Text>
 
-              <View style={styles.columns}>
-                <View style={styles.column}>
-                  <Text style={styles.columnTitle}>Realizado</Text>
-                  <Text style={styles.itemMantenimiento}> 🗓️ {formatFirebaseDate(item.fecha, true)}</Text>
-                  <Text style={styles.itemMantenimiento}>⏲️ {formatearDistancia(item.kilometraje_actual, unidad)} </Text>
-                </View>
-
-                <View style={styles.column}>
-                  <Text style={styles.columnTitle}>🔔 Próximo cambio</Text>
-                  <Text style={styles.itemMantenimiento}> 🗓️ {formatFirebaseDate(item.fecha_recordatorio, true)}</Text>
-                  <Text style={styles.itemMantenimiento}>⏲️ {formatearDistancia(item.km_recordatorio, unidad)} </Text>
-
-                </View>
+              <View style={styles.column}>
+                <Text style={styles.columnTitle}>🔔 Próximo cambio</Text>
+                <Text style={styles.itemMantenimiento}> 🗓️ {formatFirebaseDate(item.fecha_recordatorio, true)}</Text>
+                <Text style={styles.itemMantenimiento}>⏲️ {formatearDistancia(item.km_recordatorio, unidad)} </Text>
 
               </View>
-              <Divider />
 
-              <Text style={styles.detalleLine}>
-                Repuestos <Text style={styles.detalleBold}>{capitalizar(item.tipo_repuestos)}</Text>
-                {'  '}· Comprado en <Text style={styles.detalleBold}>{item.comprado || '—'}</Text>
-                {'  '}· Taller <Text style={styles.detalleBold}>{item.manoobra || '—'}</Text>
-              </Text>
-              <Text style={styles.itemMantenimiento}>
-                Mano obra {formatearMoneda(item.costo_manoobra)} + Rep. {formatearMoneda(item.costo_repuestos)}
-              </Text>
-              <Text style={styles.costoTotal}>Total: {formatearMoneda(total)}</Text>
+            </View>
+            <Divider />
 
-            </TouchableOpacity>
-          );
-        })}
+            <Text style={styles.detalleLine}>
+              Repuestos <Text style={styles.detalleBold}>{capitalizar(item.tipo_repuestos)}</Text>
+              {'  '}· Comprado en <Text style={styles.detalleBold}>{item.comprado || '—'}</Text>
+              {'  '}· Taller <Text style={styles.detalleBold}>{item.manoobra || '—'}</Text>
+            </Text>
+            <Text style={styles.itemMantenimiento}>
+              Mano obra {formatearMoneda(item.costo_manoobra)} + Rep. {formatearMoneda(item.costo_repuestos)}
+            </Text>
+            <Text style={styles.costoTotal}>Total: {formatearMoneda(total)}</Text>
+
+          </TouchableOpacity>
+        );
+      })}
 
     </ScrollView>
   );

@@ -13,6 +13,7 @@ export interface Tanqueada {
   litros: number;
   costo: number;
   lleno: boolean;
+  createdAt?: { _seconds: number; _nanoseconds: number } | string;
 }
 
 export async function getTanqueadas(vehiculoId?: string) {

@@ -3,7 +3,7 @@ import { MarcaCatalogo, ModeloCatalogo, getItem, getMarcas, getModelos } from '@
 import { actualizarVehiculo, crearVehiculo } from '@/src/services/api/vehiculoServices';
 import { router, usePathname } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 import { Button, FAB, Portal, TextInput } from 'react-native-paper';
 import { Vehiculo } from '../../interfaces/vehiculos';
@@ -286,10 +286,11 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
   const etiquetaDistancia = unidad === 'millas' ? 'MI' : 'KM';
 
   interface MarcaLocal { id: number | string; marca: string; }
-  interface ModeloLocal { id: number | string; id_marca: number | string; nombre: string; year: number; }
+  interface ModeloLocal { id: number | string; id_marca: number | string; nombre: string; year: number; tipo?: string; }
 
-  const [marca, setMarca] = useState('');
+  const [marca, setMarca] = useState<number | string>('');
   const [marcaName, setMarcaName] = useState('Toyota');
+  const [tipoVehiculo, setTipoVehiculo] = useState('automovil');
   const [modelo, setModelo] = useState('');
   const [marcas, setMarcas] = useState<MarcaLocal[]>(MARCAS);
   const [todosModelos, setTodosModelos] = useState<ModeloLocal[]>(MODELOS);
@@ -320,7 +321,7 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
   async function onPress() {
     setIsLoading(true);
 
-    const body = { id: vehicleEditar?.id, marca: marcaName, modelo, year, placa, kilometraje }
+    const body = { id: vehicleEditar?.id, marca: marcaName, modelo, year, placa, kilometraje, tipo: tipoVehiculo }
 
     // Validacion de campos obligatorios
     if ([marca, modelo, year, placa].includes('')) {
@@ -388,30 +389,38 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
       // Marcas y modelos desde el backend; si falla, se usa el local de respaldo.
       const [respMarcas, respModelos] = await Promise.all([getMarcas(), getModelos()]);
       let listaMarcas: MarcaLocal[] = MARCAS;
+      let listaModelos: ModeloLocal[] = MODELOS;
       if (respMarcas && Array.isArray(respMarcas.data) && respMarcas.data.length > 0) {
         listaMarcas = (respMarcas.data as MarcaCatalogo[]).map((m) => ({ id: m.id, marca: m.nombre }));
         setMarcas(listaMarcas);
       }
       if (respModelos && Array.isArray(respModelos.data) && respModelos.data.length > 0) {
-        setTodosModelos(
-          (respModelos.data as ModeloCatalogo[]).map((m) => ({
-            id: m.id,
-            id_marca: m.marcaId,
-            nombre: m.nombre,
-            year: m.year ?? new Date().getFullYear(),
-          }))
-        );
+        listaModelos = (respModelos.data as ModeloCatalogo[]).map((m) => ({
+          id: m.id,
+          id_marca: m.marcaId,
+          nombre: m.nombre,
+          year: m.year ?? new Date().getFullYear(),
+          tipo: m.tipo === 'moto' ? 'moto' : 'automovil',
+        }));
+        setTodosModelos(listaModelos);
       }
-      // Si la marca actual no existe en la lista, seleccionar la primera.
-      if (listaMarcas.length > 0 && !listaMarcas.some((m) => String(m.id) === String(marcaRef.current))) {
-        setMarca(String(listaMarcas[0].id));
-        setMarcaName(listaMarcas[0].marca);
+      // Al abrir, el tipo activo es automovil: si la marca actual no tiene
+      // modelos de ese tipo, seleccionar la primera válida.
+      const tieneModelos = (id: number | string) =>
+        listaModelos.some((mo) => String(mo.id_marca) === String(id) && (mo.tipo || 'automovil') === 'automovil');
+      if (!listaMarcas.some((m) => String(m.id) === String(marcaRef.current) && tieneModelos(m.id))) {
+        const primera = listaMarcas.find((m) => tieneModelos(m.id));
+        if (primera) {
+          setMarca(primera.id);
+          setMarcaName(primera.marca);
+        }
       }
     }
   }, []);
 
   useEffect(() => {
     if (vehicleEditar) {
+      setTipoVehiculo(vehicleEditar.tipo === 'moto' ? 'moto' : 'automovil');
       setMarca(vehicleEditar.marca.toString());
       setModelo(vehicleEditar.modelo);
       setYear(vehicleEditar.year.toString());
@@ -428,10 +437,32 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
     }
   }, [vehicleEditar]);
 
+  function onTipoChange(t: string) {
+    setTipoVehiculo(t);
+    const validas = marcas.filter((mc) =>
+      todosModelos.some((mo) => String(mo.id_marca) === String(mc.id) && (mo.tipo || 'automovil') === t)
+    );
+    if (validas.length > 0) {
+      setMarca(validas[0].id);
+      setMarcaName(validas[0].marca);
+    } else {
+      setMarca('');
+      setMarcaName('');
+    }
+    setModelo('');
+  }
+
   useEffect(() => {
-    const modelosFiltrados = todosModelos.filter(model => model.id_marca.toString() === marca.toString());
+    const modelosFiltrados = todosModelos.filter(
+      (model) => model.id_marca.toString() === marca.toString() && (model.tipo || 'automovil') === tipoVehiculo
+    );
     setModelos(modelosFiltrados);
-  }, [marca, todosModelos]);
+  }, [marca, todosModelos, tipoVehiculo]);
+
+  // Marcas que tienen al menos un modelo del tipo seleccionado.
+  const marcasPorTipo = marcas.filter((mc) =>
+    todosModelos.some((mo) => String(mo.id_marca) === String(mc.id) && (mo.tipo || 'automovil') === tipoVehiculo)
+  );
 
   return (
     <View>
@@ -443,6 +474,28 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
           : 'Completa la información técnica para registrar el vehículo'
         }
       </Text>
+
+      <Text style={styles.labelTipo}>Tipo de vehículo *</Text>
+      <View style={styles.tipoRow}>
+        {(['automovil', 'moto'] as const).map((t) => (
+          <TouchableOpacity
+            key={t}
+            style={[styles.tipoChip, tipoVehiculo === t && styles.tipoChipActivo]}
+            onPress={() => onTipoChange(t)}
+            disabled={!!vehicleEditar?.id}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tipoChipText, tipoVehiculo === t && styles.tipoChipTextActivo]}>
+              {t === 'moto' ? 'Motocicleta' : 'Automóvil'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+          </View>
+          {marcasPorTipo.length === 0 && !vehicleEditar?.id ? (
+            <Text style={styles.avisoCatalogo}>
+              No hay marcas para este tipo. Ejecuta el seed del catálogo en el backend.
+            </Text>
+          ) : null}
 
       {!vehicleEditar?.id ? (
         <>
@@ -456,9 +509,10 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
             iconColor='#1D4ED8'
             placeholder='Selecciona la marca del vehículo *'
             searchPlaceholder='Buscar marca'
-            data={marcas}
+            data={marcasPorTipo}
             labelField='marca'
-            valueField='id_marca'
+            valueField='id'
+            value={marca}
             onChange={item => {
               setMarca(item.id);
               setMarcaName(item.marca);
@@ -608,6 +662,50 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     textAlign: 'center',
     color: '#0F2A5C',
+  },
+  labelTipo: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: '#5B6B7F',
+    marginLeft: 15,
+    marginTop: 12,
+    textTransform: 'uppercase',
+  },
+  avisoCatalogo: {
+    color: '#B91C1C',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginHorizontal: 10,
+    marginTop: 6,
+  },
+  tipoRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginHorizontal: 10,
+    marginTop: 8,
+  },
+  tipoChip: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: '#D3DCE9',
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    backgroundColor: '#F7F9FD',
+  },
+  tipoChipActivo: {
+    borderColor: '#1D4ED8',
+    backgroundColor: '#1D4ED8',
+  },
+  tipoChipText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#5B6B7F',
+  },
+  tipoChipTextActivo: {
+    color: '#FFFFFF',
   },
   submit: {
     margin: 10,
