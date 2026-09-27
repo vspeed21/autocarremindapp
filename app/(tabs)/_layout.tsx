@@ -25,10 +25,6 @@ function TabsLayout() {
           tabBarIcon: ({ color, focused }) => <FontAwesome size={focused ? 25 : 20} name="tint" color={color} />,
         }}
       />
-      {/*
-        GRÁFICAS v2 — PESTAÑA EN PAUSA, NO BORRAR.
-        Para reactivar: quitar este comentario y restaurar
-        src/screens/graficas/GraficasScreen.tsx y app/(tabs)/graficas/index.tsx.
       <Tabs.Screen
         name="graficas/index"
         options={{
@@ -36,7 +32,6 @@ function TabsLayout() {
           tabBarIcon: ({ color, focused }) => <FontAwesome size={focused ? 25 : 20} name="bar-chart" color={color} />,
         }}
       />
-      */}
       <Tabs.Screen
         name="mas-info/index"
         options={{

@@ -1,17 +1,12 @@
-/*
- * GRÁFICAS v2 — CÓDIGO EN PAUSA, NO BORRAR.
- * Para reactivar: quitar este comentario de apertura y el de cierre al final del archivo,
- * y descomentar la ruta en app/(tabs)/_layout.tsx y el export en src/screens/index.ts.
- *
+import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { Text } from 'react-native-paper';
 
-import { SimpleSkeleton } from '@/src/components/skeleton';
 import { PlaceholderView } from '@/src/components/shared';
-import { Mantenimiento } from '@/src/interfaces/mantenimientos';
+import { SimpleSkeleton } from '@/src/components/skeleton';
 import { fechaToDate, formatearMoneda } from '@/src/helpers';
+import { Mantenimiento } from '@/src/interfaces/mantenimientos';
 import { getMisMantenimientos } from '@/src/services';
 
 
@@ -248,6 +243,3 @@ const styles = StyleSheet.create({
 });
 
 export default GraficasScreen;
- *
- * FIN GRÁFICAS v2
- */
