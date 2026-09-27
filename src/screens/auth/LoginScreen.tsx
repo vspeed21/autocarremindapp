@@ -10,6 +10,20 @@ import { esEmailValido } from '@/src/helpers';
 import { loginUser, saveItem } from '@/src/services';
 
 
+function mensajeBackend(code?: number): string {
+  switch (code) {
+    case 403:
+      return 'Debes activar tu cuenta desde el enlace enviado a tu correo';
+    case 401:
+      return 'Sesión inválida o vencida. Inicia sesión de nuevo';
+    case 404:
+      return 'No encontramos tu cuenta. Verifica el correo o crea una cuenta';
+    default:
+      return 'No se pudo iniciar sesión. Revisa tu conexión e intenta de nuevo';
+  }
+}
+
+
 function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,29 +68,47 @@ function LoginScreen() {
       });
 
       setIsLoading(true);
+
+      // HTTP directo a la API con los services existentes.
       const data = await loginUser(body);
 
+      // Cualquier respuesta no exitosa muestra el mensaje del backend
+      // (403 cuenta sin activar, 404, 401) o un respaldo si vino vacío.
+      if (!data || data.code !== 200 || data.error) {
+        setIsLoading(false);
+        setAlerta({
+          error: true,
+          message: data?.message || mensajeBackend(data?.code),
+        });
+        return;
+      }
+
       setAlerta({
-        error: data.error,
-        message: data.message,
+        error: false,
+        message: data.message || 'Bienvenido',
       });
-      await saveItem({ key: 'token', value: data.token, json: false });
-      // La API no devuelve el email en /usuarios/info: se guarda al iniciar sesión.
-      await saveItem({ key: 'usuario_email', value: data.usuario?.email ?? email.toLowerCase(), json: false });
-      await saveItem({ key: 'usuario_nombre', value: data.usuario?.nombre ?? '', json: false });
+
+      if (data.token) {
+        await saveItem({ key: 'token', value: data.token, json: false });
+        // La API no devuelve el email en /usuarios/info: se guarda al iniciar sesión.
+        await saveItem({ key: 'usuario_email', value: data.usuario?.email ?? email.toLowerCase(), json: false });
+        await saveItem({ key: 'usuario_nombre', value: data.usuario?.nombre ?? '', json: false });
+      }
 
       setIsLoading(false);
 
 
-      if (data.code === 200) {
-        setTimeout(() => {
-          router.replace('/vehiculos');
-        }, 1000);
-      }
+      setTimeout(() => {
+        router.replace('/vehiculos');
+      }, 1000);
 
 
     } catch {
-      // Sin acción adicional.
+      setIsLoading(false);
+      setAlerta({
+        error: true,
+        message: 'Ocurrió un error inesperado. Intenta de nuevo',
+      });
     } finally {
       setIsLoading(false);
     }

@@ -12,7 +12,8 @@ export async function loginUser(body: any) {
     const { data } = await apiClient.post(`${BASE_URL}/login`, body);
     return data;
   } catch (error: any) {
-    return error.response;
+    // Normalizar: el cuerpo del backend ({ error, code, message }) o fallo de red.
+    return error.response?.data ?? { error: true, code: 0, message: '' };
   }
 }
 
