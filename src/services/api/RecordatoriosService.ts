@@ -26,7 +26,7 @@ export interface Recordatorio {
  * Próximos vencimientos + vencidos del usuario (GET /api/recordatorios?dias=30).
  * El backend filtra, une el vehículo y ordena (vencidos primero).
  */
-export async function getRecordatorios(dias: number = 30) {
+export async function getRecordatorios(dias: number = 60) {
   try {
     const config = await getConfigAxios();
     const { data } = await apiClient.get(`${BASE_URL}?dias=${dias}`, config);
