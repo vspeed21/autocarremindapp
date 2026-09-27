@@ -12,6 +12,7 @@ function MasInfoScreen() {
   ]
 
   const [unidadMedida, setUnidadMedida] = useState('');
+  const [guardandoUnidad, setGuardandoUnidad] = useState(false);
   const [currentUser, setCurrentUser] = useState({ nombre: '', config: { unidad: '' } });
   const [email, setEmail] = useState('');
 
@@ -57,20 +58,31 @@ function MasInfoScreen() {
           labelField='nombre'
           valueField='id'
           value={unidadMedida}
+          disable={guardandoUnidad}
           onChange={async (item) => {
+            if (guardandoUnidad) return;
             const anterior = unidadMedida;
             setUnidadMedida(item.id);
+            setGuardandoUnidad(true);
             // Persiste la unidad en el backend (convierte los valores guardados);
             // si falla, revierte en pantalla. Avisa al garaje para recargar.
-            const resp = await updateUserConfig({ unidad: item.id });
-            if (resp?.error) {
-              setUnidadMedida(anterior);
-            } else {
-              await saveItem({ key: 'unidad_cambiada', value: '1', json: false });
+            // Se bloquea el selector hasta terminar para no leer datos a medias.
+            try {
+              const resp = await updateUserConfig({ unidad: item.id });
+              if (resp?.error) {
+                setUnidadMedida(anterior);
+              } else {
+                await saveItem({ key: 'unidad_cambiada', value: '1', json: false });
+              }
+            } finally {
+              setGuardandoUnidad(false);
             }
           }}
           maxHeight={400}
         />
+        {guardandoUnidad ? (
+          <Text style={styles.guardando}>Guardando y convirtiendo valores…</Text>
+        ) : null}
       </View>
 
       <View style={styles.card}>
@@ -160,6 +172,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F2A5C',
     marginBottom: 6,
+  },
+  guardando: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1D4ED8',
+    marginTop: 6,
+    textAlign: 'center',
   },
   dropdown: {
     height: 54,
