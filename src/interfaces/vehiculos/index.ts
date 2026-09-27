@@ -8,6 +8,7 @@ export interface Vehiculo {
   year: string
   placa: string
   kilometraje: number
+  tipo?: string
   createdAt: fechaFirebase
   updatedAt: fechaFirebase
 }

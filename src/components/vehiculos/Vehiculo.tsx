@@ -12,17 +12,23 @@ interface Props {
 }
 
 function Vehiculo({ vehiculo, conteoMantenimientos = 0, progreso = 12, unidad = 'kilometros' }: Props) {
+  const esMoto = vehiculo.tipo === 'moto';
   return (
     <View style={styles.card}>
 
       <View style={styles.visual}>
         <View style={styles.iconBox}>
-          <Icon size={28} source='car' color='#FFFFFF' />
+          <Icon size={28} source={esMoto ? 'motorbike' : 'car'} color='#FFFFFF' />
         </View>
 
         <View style={{ flex: 1 }}>
           <Text style={styles.placa}>{vehiculo.placa}</Text>
-          <Text style={styles.title}>{vehiculo.marca} {vehiculo.modelo}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{vehiculo.marca} {vehiculo.modelo}</Text>
+            <Text style={[styles.badge, esMoto ? styles.badgeMoto : styles.badgeCarro]}>
+              {esMoto ? 'Moto' : 'Carro'}
+            </Text>
+          </View>
           <Text style={styles.subtitle}>
             {conteoMantenimientos} {conteoMantenimientos === 1 ? 'mantenimiento registrado' : 'mantenimientos registrados'}
           </Text>
@@ -103,10 +109,38 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   title: {
+    flexShrink: 1,
     fontSize: 17,
     fontWeight: '800',
     color: '#0F2A5C',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  badge: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+  },
+  badgeMoto: {
+    backgroundColor: '#F3E8FF',
+    color: '#6B21A8',
+    borderColor: '#D8B4FE',
+  },
+  badgeCarro: {
+    backgroundColor: '#DBEAFE',
+    color: '#1E40AF',
+    borderColor: '#93C5FD',
   },
   subtitle: {
     fontSize: 12,

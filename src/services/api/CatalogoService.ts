@@ -12,6 +12,7 @@ export interface ModeloCatalogo {
   marcaId: string;
   marcaNombre?: string;
   year?: number;
+  tipo?: string;
 }
 
 /**

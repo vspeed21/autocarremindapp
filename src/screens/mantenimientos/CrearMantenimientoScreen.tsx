@@ -58,6 +58,7 @@ function CrearMantenimientoScreen() {
             nombre: item.nombre,
             intervaloKm: Number(item.intervaloKm) || 0,
             intervaloFecha: Number(item.intervaloFechaDias) || 0,
+            aplicaA: item.aplicaA === 'moto' ? 'moto' : 'automovil',
           }))
         );
       }
@@ -171,6 +172,20 @@ function CrearMantenimientoScreen() {
     });
   }
 
+  // El recordatorio se calcula solo, pero queda editable para ajustarlo a mano.
+  const showDatePickerRecordatorio = () => {
+    DateTimePickerAndroid.open({
+      value: fechaEstimadaRecordatorio,
+      onChange: (event, selectedDate) => {
+        if (!selectedDate) return;
+        setFechaEstimadaRecordatorio(selectedDate);
+      },
+      mode: 'date',
+      is24Hour: true,
+      minimumDate: new Date(),
+    });
+  }
+
   function calcularFechaKmRecordatorio(date?: Date, mantenimiento?: any) {
     const nuevaFecha = new Date(date || fechaMantenimiento);
     const selected = mantenimiento || mantenimientoSelected;
@@ -194,6 +209,14 @@ function CrearMantenimientoScreen() {
 
     if (!kilometrajeActual || kilometrajeActual <= 0) {
       setAlerta({ error: true, message: 'Ingresa un kilometraje válido mayor a 0' });
+      setTimeout(() => {
+        setAlerta({ error: false, message: '' });
+      }, 3000);
+      return;
+    }
+
+    if (!kmEstimadoRecordatorio || kmEstimadoRecordatorio <= 0) {
+      setAlerta({ error: true, message: 'Ingresa un kilometraje de recordatorio válido mayor a 0' });
       setTimeout(() => {
         setAlerta({ error: false, message: '' });
       }, 3000);
@@ -261,6 +284,23 @@ function CrearMantenimientoScreen() {
     }
   }, [vehiculo.kilometraje]);
 
+  // Tipo del vehículo actual (los viejos sin tipo cuentan como automovil).
+  const tipoVehiculo = vehiculo.tipo === 'moto' ? 'moto' : 'automovil';
+
+  // Catálogo filtrado por tipo; sin filtro verías nombres duplicados (ej. aceite carro/moto).
+  const catalogoFiltrado = catalogo.filter((c) => (c.aplicaA || 'automovil') === tipoVehiculo);
+
+  // Si lo seleccionado ya no aplica al tipo (cambió el vehículo o llegó el catálogo), limpiar.
+  // En edición no se toca: el campo queda bloqueado con el valor guardado.
+  useEffect(() => {
+    if (editandoId || !catalogo.length || !mantenimientoRealizado) return;
+    const vigente = catalogo.some((c) => c.nombre === mantenimientoRealizado && (c.aplicaA || 'automovil') === tipoVehiculo);
+    if (!vigente) {
+      setMantenimientoRealizado('');
+      setMantenimientoSelected({ nombre: '', intervaloFecha: 0, intervaloKm: 0 });
+    }
+  }, [catalogo, tipoVehiculo, mantenimientoRealizado, editandoId]);
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -282,23 +322,33 @@ function CrearMantenimientoScreen() {
 
           <Text style={[styles.subtitle, { marginVertical: 0 }]}>Información del mantenimiento</Text>
 
-          <Dropdown
-            style={[styles.dropdown, styles.inputSeparador, { marginBottom: 8 }]}
-            placeholder='Selecciona el mantenimiento realizado'
-            searchPlaceholder='Buscar un mantenimiento'
-            data={catalogo}
-            labelField='nombre'
-            valueField='nombre'
-            value={mantenimientoRealizado}
-            onChange={item => {
-              setMantenimientoSelected(item);
-              setMantenimientoRealizado(item.nombre);
+          {editandoId ? (
+            <TextInput
+              label='Mantenimiento realizado'
+              mode='outlined' outlineColor='#D3DCE9' activeOutlineColor='#1D4ED8'
+              style={[styles.input, styles.inputSeparador, { marginBottom: 8 }]}
+              value={mantenimientoRealizado}
+              editable={false}
+            />
+          ) : (
+            <Dropdown
+              style={[styles.dropdown, styles.inputSeparador, { marginBottom: 8 }]}
+              placeholder='Selecciona el mantenimiento realizado'
+              searchPlaceholder='Buscar un mantenimiento'
+              data={catalogoFiltrado}
+              labelField='nombre'
+              valueField='nombre'
+              value={mantenimientoRealizado}
+              onChange={item => {
+                setMantenimientoSelected(item);
+                setMantenimientoRealizado(item.nombre);
 
-              calcularFechaKmRecordatorio(fechaMantenimiento, item);
-            }}
-            search
-            maxHeight={400}
-          />
+                calcularFechaKmRecordatorio(fechaMantenimiento, item);
+              }}
+              search
+              maxHeight={400}
+            />
+          )}
 
           <TouchableOpacity
             onPress={() => showDatePicker()}
@@ -343,22 +393,29 @@ function CrearMantenimientoScreen() {
 
           <Text style={styles.step}>02 · Próximo aviso</Text>
           <Text style={styles.subtitle}>Recordatorio</Text>
+          <Text style={styles.hintRecordatorio}>Se calcula solo según lo seleccionado, pero puedes ajustarlo</Text>
 
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 15 }}>
-            <TextInput
-              label='Fecha estimada del próximo cambio'
-              mode='outlined' outlineColor='#D3DCE9' activeOutlineColor='#1D4ED8'
-              style={[styles.input, styles.inputSeparador, { marginInline: 0, width: '45%' }]}
-              editable={false}
-              value={fechaEstimadaRecordatorio.toLocaleDateString()}
-            />
+            <TouchableOpacity
+              onPress={() => showDatePickerRecordatorio()}
+              style={{ marginInline: 0, width: '45%' }}
+              activeOpacity={0.7}
+            >
+              <TextInput
+                label='Fecha estimada del próximo cambio'
+                mode='outlined' outlineColor='#D3DCE9' activeOutlineColor='#1D4ED8'
+                style={[styles.input, styles.inputSeparador, { marginInline: 0, width: '100%' }]}
+                value={fechaEstimadaRecordatorio.toLocaleDateString()}
+                editable={false}
+              />
+            </TouchableOpacity>
 
             <TextInput
               label={`Próximo cambio en (${etiquetaDistancia(unidad).toLowerCase()})`}
               mode='outlined' outlineColor='#D3DCE9' activeOutlineColor='#1D4ED8'
               style={[styles.input, styles.inputSeparador, { marginInline: 0, width: '45%' }]}
               value={kmEstimadoRecordatorio.toString()}
-              editable={false}
+              onChangeText={(text) => setKmEstimadoRecordatorio(Number(text))}
               keyboardType='numeric'
             />
           </View>
@@ -525,6 +582,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '900',
+  },
+  hintRecordatorio: {
+    color: '#5C6B82',
+    fontSize: 12,
+    fontWeight: '400',
+    marginLeft: 15,
+    marginBottom: 8,
   },
 
   dropdown: {
