@@ -10,7 +10,7 @@ export interface Tanqueada {
   uid?: string;
   fecha: { _seconds: number; _nanoseconds: number } | string;
   km: number;
-  galones: number;
+  litros: number;
   costo: number;
   lleno: boolean;
 }

@@ -1,14 +1,11 @@
-// ─── Imports de React / React Native ─────────────────────────────
+import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 
-// ─── Imports de librerías UI ─────────────────────────────────────
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Dropdown } from 'react-native-element-dropdown';
 import { Button, Checkbox, TextInput } from 'react-native-paper';
 
-// ─── Imports internos (componentes, helpers, servicios) ──────────
 import { AlertaMessage, MicroCopy, PlaceholderView } from '@/src/components/shared';
 import { SimpleSkeleton } from '@/src/components/skeleton';
 import { etiquetaDistancia, fechaToDate, formatearMoneda } from '@/src/helpers';
@@ -40,7 +37,7 @@ interface ResumenRendimiento {
  * Valores mayores se consideran error de digitación y se ignoran.
  */
 function maxRendimiento(unidad: string): number {
-  return unidad === 'millas' ? 150 : 250;
+  return unidad === 'millas' ? 40 : 70;
 }
 
 /** Ordena tanqueadas por KM ascendente sin mutar el arreglo original. */
@@ -50,15 +47,15 @@ function ordenarPorKm(tanqueadas: Tanqueada[]): Tanqueada[] {
 
 /**
  * Rendimiento de UNA tanqueada contra la anterior por KM:
- * (kmActual - kmAnterior) / galones. Devuelve null si no es calculable
+ * (kmActual - kmAnterior) / litros. Devuelve null si no es calculable
  * (primera, parcial anterior inválida, KM que no avanza o valor absurdo).
  */
 function rendimientoDeUna(previo: Tanqueada | undefined, actual: Tanqueada, unidad: string): number | null {
   if (!actual.lleno || !previo) return null;
   const kmRecorridos = actual.km - previo.km;
-  const galones = Number(actual.galones) || 0;
-  if (kmRecorridos <= 0 || galones <= 0) return null;
-  const rendimiento = kmRecorridos / galones;
+  const litros = Number(actual.litros) || 0;
+  if (kmRecorridos <= 0 || litros <= 0) return null;
+  const rendimiento = kmRecorridos / litros;
   if (rendimiento >= maxRendimiento(unidad)) return null;
   return rendimiento;
 }
@@ -118,14 +115,14 @@ function CombustibleScreen() {
   // ── Formulario ──
   const [fecha, setFecha] = useState(new Date());
   const [km, setKm] = useState(0);
-  const [galones, setGalones] = useState('');
+  const [litros, setLitros] = useState('');
   const [costo, setCosto] = useState('');
   const [lleno, setLleno] = useState(true);
   const [actualizarKm, setActualizarKm] = useState(true);
 
   // ── Valores derivados ──
   const unidadEtiqueta = etiquetaDistancia(unidad);
-  const unidadVolumen = unidad === 'millas' ? 'mi/gal' : 'km/gal';
+  const unidadVolumen = unidad === 'millas' ? 'mi/L' : 'km/L';
   const opciones: OpcionVehiculo[] = vehiculos.map((v) => ({
     id: v.id,
     etiqueta: `${v.marca} ${v.modelo} - ${v.placa}`,
@@ -223,18 +220,17 @@ function CombustibleScreen() {
     });
   }
 
-  // ── Guardar: valida, confirma datos atípicos y envía ──
   async function onGuardar() {
     if (!vehicleId) {
       mostrarAlerta('Selecciona un vehículo primero', true);
       return;
     }
-    if (!km || km <= 0 || !galones || Number(galones) <= 0) {
-      mostrarAlerta('Ingresa KM y galones válidos mayores a 0', true);
+    if (!km || km <= 0 || !litros || Number(litros) <= 0) {
+      mostrarAlerta('Ingresa KM y litros válidos mayores a 0', true);
       return;
     }
 
-    const gal = Number(galones);
+    const lts = Number(litros);
     const kms = tanqueadas.map((t) => t.km);
     if (kms.length > 0) {
       const ultimoKm = Math.max(...kms);
@@ -242,7 +238,7 @@ function CombustibleScreen() {
         confirmarGuardado(`El KM ingresado (${km}) es menor o igual al último registrado (${ultimoKm}). ¿Guardar de todos modos?`);
         return;
       }
-      const estimado = (km - ultimoKm) / gal;
+      const estimado = (km - ultimoKm) / lts;
       const tope = maxRendimiento(unidad);
       if (estimado >= tope) {
         confirmarGuardado(`Da ${estimado.toFixed(1)} ${unidadVolumen}, fuera de lo normal (máx. ${tope}). ¿Guardar de todos modos?`);
@@ -265,7 +261,7 @@ function CombustibleScreen() {
       vehiculo: vehicleId,
       fecha,
       km,
-      galones: Number(galones),
+      litros: Number(litros),
       costo: Number(costo) || 0,
       lleno,
       actualizar_kilometraje: actualizarKm,
@@ -278,7 +274,7 @@ function CombustibleScreen() {
     }
 
     mostrarAlerta('Tanqueada guardada correctamente', false);
-    setGalones('');
+    setLitros('');
     setCosto('');
     recargar();
   }
@@ -287,7 +283,7 @@ function CombustibleScreen() {
   function onLongPressTanqueada(item: Tanqueada) {
     Alert.alert(
       'Eliminar tanqueada',
-      `Se eliminará el registro de ${item.galones} gal del ${formatearFecha(item.fecha)}.`,
+      `Se eliminará el registro de ${item.litros} L del ${formatearFecha(item.fecha)}.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', style: 'destructive', onPress: () => eliminar(item) },
@@ -406,13 +402,13 @@ function CombustibleScreen() {
               onChangeText={(text) => setKm(Number(text))}
             />
             <TextInput
-              label='Galones'
+              label='Litros'
               mode='outlined' outlineColor='#D3DCE9' activeOutlineColor='#1D4ED8'
               keyboardType='numeric'
               style={[styles.input, styles.inputHalf]}
-              value={galones.toString()}
-              onChangeText={setGalones}
-              placeholder='10.50'
+              value={litros.toString()}
+              onChangeText={setLitros}
+              placeholder='40.00'
             />
           </View>
 
@@ -482,7 +478,7 @@ function CombustibleScreen() {
                     </Text>
                     <Text style={styles.filaFecha}>{formatearFecha(item.fecha)}</Text>
                   </View>
-                  <Text style={styles.filaTitulo}>{item.galones} gal · {formatearMoneda(item.costo)}</Text>
+                  <Text style={styles.filaTitulo}>{item.litros} L · {formatearMoneda(item.costo)}</Text>
                   <Text style={styles.filaDetalle}>{Number(item.km).toLocaleString()} {unidadEtiqueta}{item.lleno ? ' · tanque lleno' : ''}</Text>
                 </TouchableOpacity>
               ))
