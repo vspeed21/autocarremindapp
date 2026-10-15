@@ -2,13 +2,17 @@
   "expo": {
     "name": "Auto Car Remaind",
     "slug": "autocarremind",
-    "version": "2026.05.30",
+    "version": "2026.10.08",
     "orientation": "portrait",
     "icon": "./assets/images/logoacr.png",
     "scheme": "autocarremind",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vspeed21.autocarremind",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
