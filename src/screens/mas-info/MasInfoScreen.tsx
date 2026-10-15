@@ -1,6 +1,6 @@
+import { ViajesAutomaticos } from '@/src/components/viajes';
 import { cerrarSesion, getCurrentUserInfo, getItem, saveItem, updateUserConfig } from '@/src/services';
 import { detenerTracking } from '@/src/services/viajes/trackingService';
-import { ViajesAutomaticos } from '@/src/components/viajes';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -98,6 +98,10 @@ function MasInfoScreen() {
 
           <List.Accordion title="¿Cuántos vehículos puedo tener?" id="2" titleStyle={styles.accordionTitle}>
             <Text style={styles.accordionText}>Hasta 3 vehículos por cuenta. La placa es única y el kilometraje nunca puede bajar al editar.</Text>
+          </List.Accordion>
+
+          <List.Accordion title="¿Cómo funciona la detección de viajes?" id="3" titleStyle={styles.accordionTitle}>
+            <Text style={styles.accordionText}>Al activar Detectar mis viajes, la app usa tu ubicación para saber cuando viajas en vehículo. Al terminar el viaje, los kilómetros se suman solos a tu vehículo favorito y recibes un aviso. Si un viaje no era en tu vehículo (por ejemplo ibas en bus), puedes deshacerlo o moverlo a otro vehículo desde Mis viajes.</Text>
           </List.Accordion>
 
         </List.AccordionGroup>

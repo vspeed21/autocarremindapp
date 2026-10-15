@@ -1,20 +1,20 @@
 import { AlertaMessage } from '@/src/components/shared';
-import { getItem, obtenerVehiculos } from '@/src/services';
 import { Vehiculo } from '@/src/interfaces/vehiculos';
+import { getItem, obtenerVehiculos } from '@/src/services';
 import {
-  KEY_FAV,
-  KEY_TRACKING,
-  detenerTracking,
   deshacerViaje,
+  detenerTracking,
   guardarFavorito,
   iniciarTracking,
+  KEY_FAV,
+  KEY_TRACKING,
   leerViajes,
   moverViaje,
   ViajeLog,
 } from '@/src/services/viajes/trackingService';
+import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { Dropdown } from 'react-native-element-dropdown';
 import { Button, Switch, Text } from 'react-native-paper';
 
@@ -87,26 +87,32 @@ function ViajesAutomaticos() {
           }}
         />
       </View>
-      <Text style={styles.label}>Vehículo favorito (suma automática)</Text>
-      <Dropdown
-        style={styles.dropdown}
-        placeholderStyle={styles.dropdownPlaceholder}
-        selectedTextStyle={styles.dropdownSelectedText}
-        containerStyle={styles.dropdownList}
-        itemTextStyle={styles.dropdownItemText}
-        iconColor='#1D4ED8'
-        placeholder='Selecciona tu vehículo'
-        data={vehiculos.map((v) => ({ id: v.id, nombre: `${v.marca} ${v.modelo} · ${v.placa}` }))}
-        labelField='nombre'
-        valueField='id'
-        value={favoritoId}
-        onChange={async (item) => {
-          setFavoritoId(item.id);
-          await guardarFavorito(item.id);
-        }}
-        maxHeight={400}
-      />
-      <Text style={[styles.label, { marginTop: 12 }]}>Mis viajes</Text>
+
+      {vehiculos.length > 1 ? (
+        <View>
+          <Text style={styles.label}>Vehículo favorito (suma automática)</Text>
+          <Dropdown
+            style={styles.dropdown}
+            placeholderStyle={styles.dropdownPlaceholder}
+            selectedTextStyle={styles.dropdownSelectedText}
+            containerStyle={styles.dropdownList}
+            itemTextStyle={styles.dropdownItemText}
+            iconColor='#1D4ED8'
+            placeholder='Selecciona tu vehículo'
+            data={vehiculos.map((v) => ({ id: v.id, nombre: `${v.marca} ${v.modelo} · ${v.placa}` }))}
+            labelField='nombre'
+            valueField='id'
+            value={favoritoId}
+            onChange={async (item) => {
+              setFavoritoId(item.id);
+              await guardarFavorito(item.id);
+            }}
+            maxHeight={400}
+          />
+        </View>
+      ) : null}
+
+      <Text style={[styles.label, { marginTop: vehiculos.length > 1 ? 12 : 0 }]}>Mis viajes</Text>
       {viajes.length === 0 ? (
         <Text style={styles.emptyTrips}>Aún no hay viajes registrados.</Text>
       ) : (
@@ -133,7 +139,7 @@ function ViajesAutomaticos() {
                       itemTextStyle={styles.dropdownItemText}
                       iconColor='#1D4ED8'
                       placeholder='Mover a…'
-                      data={vehiculos.filter((v) => v.id !== viaje.vehiculo).map((v) => ({ id: v.id, nombre: `${v.marca} ${v.modelo}` }))}
+                      data={vehiculos.filter(v => v.id !== viaje.vehiculo).map((v) => ({ id: v.id, nombre: `${v.marca} ${v.modelo}` }))}
                       labelField='nombre'
                       valueField='id'
                       value=''
