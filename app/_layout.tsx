@@ -1,7 +1,14 @@
+import "@/src/services/viajes/backgroundTask";
+import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { PaperProvider } from 'react-native-paper';
+import { reintentarPendientes } from "@/src/services/viajes/trackingService";
 
 export default function RootLayout() {
+  // Reenvía viajes que quedaron pendientes sin red (mismo viajeId: sin duplicados).
+  useEffect(() => {
+    reintentarPendientes();
+  }, []);
   return (
     <PaperProvider>
       <Stack

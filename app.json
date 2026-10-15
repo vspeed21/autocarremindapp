@@ -10,11 +10,20 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vspeed21.autocarremind",
+      "UIBackgroundModes": [
+        "location"
+      ],
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Auto Car Remaind usa tu ubicación para detectar tus viajes y sumar los kilómetros a tu vehículo automáticamente.",
+        "NSLocationWhenInUseUsageDescription": "Auto Car Remaind usa tu ubicación para detectar tus viajes y sumar los kilómetros a tu vehículo automáticamente."
       }
     },
     "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/logoacr.png",
@@ -31,6 +40,13 @@
     "plugins": [
       "expo-router",
       "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Auto Car Remaind usa tu ubicación para detectar tus viajes y sumar los kilómetros a tu vehículo automáticamente.",
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
       [
         "expo-splash-screen",
         {

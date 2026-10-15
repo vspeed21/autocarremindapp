@@ -20,3 +20,17 @@ export async function getDeviceToken() {
     // Sin acción adicional.
   }
 }
+
+export async function notificarViaje(km: number, vehiculo: string) {
+  try {
+    await Notification.scheduleNotificationAsync({
+      content: {
+        title: 'Viaje registrado',
+        body: `Se sumaron ${km} km a tu ${vehiculo}`,
+      },
+      trigger: null,
+    });
+  } catch {
+    // Sin acción adicional.
+  }
+}

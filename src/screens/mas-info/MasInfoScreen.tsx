@@ -1,4 +1,6 @@
 import { cerrarSesion, getCurrentUserInfo, getItem, saveItem, updateUserConfig } from '@/src/services';
+import { detenerTracking } from '@/src/services/viajes/trackingService';
+import { ViajesAutomaticos } from '@/src/components/viajes';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -85,6 +87,8 @@ function MasInfoScreen() {
         ) : null}
       </View>
 
+      <ViajesAutomaticos />
+
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Ayuda</Text>
         <List.AccordionGroup>
@@ -99,7 +103,15 @@ function MasInfoScreen() {
         </List.AccordionGroup>
       </View>
 
-      <Button onPress={cerrarSesion} buttonColor='#DC2626' textColor='#FFFFFF' style={styles.logout}>
+      <Button
+        onPress={async () => {
+          await detenerTracking();
+          cerrarSesion();
+        }}
+        buttonColor='#DC2626'
+        textColor='#FFFFFF'
+        style={styles.logout}
+      >
         Cerrar sesión
       </Button>
 
