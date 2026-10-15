@@ -4,7 +4,7 @@
     "slug": "autocarremind",
     "version": "2026.10.08",
     "orientation": "portrait",
-    "icon": "./assets/images/logoacr.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "autocarremind",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -25,10 +25,10 @@
         "ACCESS_BACKGROUND_LOCATION"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/logoacr.png",
-        "backgroundImage": "./assets/images/logoacr.png",
-        "monochromeImage": "./assets/images/logoacr.png"
+        "backgroundColor": "#1D4ED8",
+        "foregroundImage": "./assets/images/adaptive-foreground.png",
+        "backgroundImage": "./assets/images/adaptive-background.png",
+        "monochromeImage": "./assets/images/adaptive-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.vspeed21.autocarremind",
