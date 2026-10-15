@@ -24,7 +24,7 @@ function capitalizar(texto: string) {
 
 function MantenimientoListScreen() {
   const [selectedMantenimiento, setSelectedMantenimiento] = useState<string>('');
-  const [catalogo, setCatalogo] = useState<{ nombre: string }[]>([]);
+  const [catalogo, setCatalogo] = useState<{ nombre: string; aplicaA?: string }[]>([]);
   const [mostrarGrafica, setMostrarGrafica] = useState<boolean>(false);
   const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -145,6 +145,19 @@ function MantenimientoListScreen() {
     recargar();
   }
 
+  // Tipo del vehículo actual (los viejos sin tipo cuentan como automovil).
+  const tipoVehiculo = vehiculo.tipo === 'moto' ? 'moto' : 'automovil';
+
+  // Opciones del filtro: solo mantenimientos del tipo del vehículo.
+  const catalogoFiltrado = catalogo.filter((c) => (c.aplicaA || 'automovil') === tipoVehiculo);
+
+  // Si el filtro activo ya no aplica al tipo, limpiarlo.
+  useEffect(() => {
+    if (!catalogo.length || !selectedMantenimiento) return;
+    const vigente = catalogo.some((c) => c.nombre === selectedMantenimiento && (c.aplicaA || 'automovil') === tipoVehiculo);
+    if (!vigente) setSelectedMantenimiento('');
+  }, [catalogo, tipoVehiculo, selectedMantenimiento]);
+
   const mantenimientosFiltrados = selectedMantenimiento
     ? mantenimientos.filter((m) => m.nombre === selectedMantenimiento)
     : mantenimientos;
@@ -241,8 +254,8 @@ function MantenimientoListScreen() {
             containerStyle={styles.dropdownList}
             itemTextStyle={styles.dropdownItemText}
             iconColor='#1D4ED8'
-            placeholder='Filtrar mantenimientos'
-            data={catalogo}
+              placeholder='Filtrar mantenimientos'
+              data={catalogoFiltrado}
             search
             maxHeight={400}
             labelField='nombre'
