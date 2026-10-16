@@ -9,12 +9,14 @@ import { getItem, saveItem } from '@/src/services/system/storage';
 // ─── Constantes ──────────────────────────────────────────────
 /** Nombre de la tarea de ubicación en segundo plano. */
 export const TRACK_TASK = 'VIAJE_TASK';
-/** Velocidad mínima (km/h) para considerar que hay movimiento. */
-export const V_MIN_KMH = 10;
-/** Segundos en movimiento continuo para declarar "en viaje". */
-export const T_INICIO_SEG = 150;
+/** Desplazamiento (m) desde el origen para declarar "en viaje". */
+export const UMBRAL_INICIO_M = 250;
+/** Radio (m): dentro de él se cuenta tiempo quieto para cerrar. */
+export const RADIO_QUIETO_M = 100;
 /** Segundos quieto continuo para cerrar el viaje. */
 export const T_FIN_SEG = 300;
+/** Velocidad máxima creíble (km/h): solo filtra saltos GPS, no es compuerta. */
+export const VEL_MAX_KMH = 180;
 /** Distancia mínima (km) para contar el viaje. */
 export const MIN_KM = 0.5;
 /** Fixes con peor precisión (m) se ignoran. */
@@ -37,8 +39,9 @@ export interface FixViaje {
 export interface EstadoViaje {
   fase: 'quieto' | 'viaje';
   distKm: number;
-  movDesde: number | null;
-  quietoDesde: number | null;
+  origen: FixViaje | null;
+  ancla: FixViaje | null;
+  anclaDesde: number | null;
   ultimo: FixViaje | null;
 }
 
@@ -53,7 +56,7 @@ export interface ViajeLog {
 }
 
 export function estadoInicial(): EstadoViaje {
-  return { fase: 'quieto', distKm: 0, movDesde: null, quietoDesde: null, ultimo: null };
+  return { fase: 'quieto', distKm: 0, origen: null, ancla: null, anclaDesde: null, ultimo: null };
 }
 
 /** Distancia en KM entre dos fixes (fórmula de haversine). */
@@ -65,40 +68,38 @@ export function haversineKm(a: FixViaje, b: FixViaje): number {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
-/**
- * Máquina de estados del viaje (pura, sin GPS ni red):
- * quieto → viaje tras T_INICIO_SEG en movimiento, viaje → cierre tras T_FIN_SEG quieto.
- */
 export function evaluarFix(f: FixViaje, e: EstadoViaje, ahora: number): { estado: EstadoViaje; evento: 'nada' | 'iniciado' | 'cerrado' } {
   if (f.acc !== null && f.acc > MAX_ACC_M) return { estado: e, evento: 'nada' };
 
   const estado: EstadoViaje = { ...e };
   let evento: 'nada' | 'iniciado' | 'cerrado' = 'nada';
 
-  if (estado.ultimo) {
+  if (!estado.origen) {
+    estado.origen = f;
+    estado.ancla = f;
+    estado.anclaDesde = ahora;
+  } else if (estado.ultimo) {
     const d = haversineKm(estado.ultimo, f);
     const dt = Math.max(1, (f.t - estado.ultimo.t) / 1000);
     const kmh = (d / dt) * 3600;
+    // Salto GPS imposible: se ignora el fix sin mover nada.
+    if (kmh > VEL_MAX_KMH) return { estado, evento: 'nada' };
 
     if (estado.fase === 'viaje') {
       estado.distKm += d;
-      if (kmh < V_MIN_KMH) {
-        if (estado.quietoDesde === null) estado.quietoDesde = ahora;
-        if (ahora - estado.quietoDesde >= T_FIN_SEG * 1000) evento = 'cerrado';
-      } else {
-        estado.quietoDesde = null;
+      if (estado.ancla && haversineKm(estado.ancla, f) * 1000 > RADIO_QUIETO_M) {
+        estado.ancla = f;
+        estado.anclaDesde = ahora;
+      } else if (estado.anclaDesde !== null && ahora - estado.anclaDesde >= T_FIN_SEG * 1000) {
+        evento = 'cerrado';
       }
     } else {
-      if (kmh >= V_MIN_KMH) {
-        if (estado.movDesde === null) estado.movDesde = ahora;
-        if (ahora - estado.movDesde >= T_INICIO_SEG * 1000) {
-          estado.fase = 'viaje';
-          estado.distKm = 0;
-          estado.quietoDesde = null;
-          evento = 'iniciado';
-        }
-      } else {
-        estado.movDesde = null;
+      if (haversineKm(estado.origen, f) * 1000 >= UMBRAL_INICIO_M) {
+        estado.fase = 'viaje';
+        estado.distKm = haversineKm(estado.origen, f);
+        estado.ancla = f;
+        estado.anclaDesde = ahora;
+        evento = 'iniciado';
       }
     }
   }
@@ -107,7 +108,7 @@ export function evaluarFix(f: FixViaje, e: EstadoViaje, ahora: number): { estado
   return { estado, evento };
 }
 
-/** Pide permiso de ubicación: primero en uso, luego siempre (fondo). */
+/** Pide permiso de ubicación: primero en uso, luego siempre (para tareas en segundo plano). */
 export async function pedirPermisosUbicacion(): Promise<'ok' | 'sin_permiso'> {
   try {
     const frente = await Location.requestForegroundPermissionsAsync();
@@ -134,7 +135,7 @@ export async function iniciarTracking(): Promise<boolean> {
         showsBackgroundLocationIndicator: true,
         foregroundService: {
           notificationTitle: 'Registrando tu viaje',
-          notificationBody: 'Sumando KM a tu vehículo',
+          notificationBody: 'Sumando kilometros a tu vehículo',
           notificationColor: '#1D4ED8',
         },
       });
@@ -195,7 +196,6 @@ function generarViajeId(): string {
 
 /**
  * Cierra un viaje: suma la distancia al favorito, notifica y lo guarda en el log.
- * Sin red queda pendiente para reintentar al abrir la app.
  */
 export async function cerrarViaje(distKm: number): Promise<{ ok: boolean; km: number; vehiculo: string }> {
   const km = Math.round(distKm * 10) / 10;
@@ -226,7 +226,6 @@ export async function cerrarViaje(distKm: number): Promise<{ ok: boolean; km: nu
   return { ok: true, km, vehiculo: fav.id };
 }
 
-/** Resta los KM de un viaje sumado (ej. ibas en bus) usando escritura absoluta. */
 export async function deshacerViaje(id: string): Promise<boolean> {
   try {
     const log = await leerViajes();

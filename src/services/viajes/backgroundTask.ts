@@ -1,5 +1,5 @@
-import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 
 import { getItem, saveItem } from '@/src/services/system/storage';
 import { cerrarViaje, estadoInicial, evaluarFix, TRACK_TASK } from './trackingService';
@@ -10,7 +10,7 @@ const KEY_ESTADO = 'viaje_estado';
 
 /**
  * Tarea de ubicación en segundo plano: el SO la despierta con cada fix GPS.
- * Headless: solo AsyncStorage, sin estados de React.
+ * Headless: solo AsyncStorage
  */
 TaskManager.defineTask(TRACK_TASK, async ({ data, error }) => {
   try {
@@ -20,13 +20,15 @@ TaskManager.defineTask(TRACK_TASK, async ({ data, error }) => {
     if (!loc) return;
 
     const guardado = await getItem({ key: KEY_ESTADO, json: true });
+    // Estados viejos (máquina por velocidad) no tienen origen: se reinician.
+    const base = guardado && guardado.origen !== undefined ? guardado : estadoInicial();
     const fix = {
       lat: loc.coords.latitude,
       lon: loc.coords.longitude,
       t: loc.timestamp,
       acc: loc.coords.accuracy,
     };
-    const { estado: nuevo, evento } = evaluarFix(fix, guardado ?? estadoInicial(), Date.now());
+    const { estado: nuevo, evento } = evaluarFix(fix, base, Date.now());
 
     if (evento === 'cerrado') {
       await cerrarViaje(nuevo.distKm);
