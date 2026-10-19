@@ -8,6 +8,7 @@ import { Dropdown } from 'react-native-element-dropdown';
 import { Button, FAB, Portal, TextInput } from 'react-native-paper';
 import { Vehiculo } from '../../interfaces/vehiculos';
 
+
 interface Props {
   showFormAddVehicle: boolean;
   setShowFormAddVehicle: (value: boolean) => void;
@@ -199,7 +200,7 @@ function CrearVehiculoModal({ setShowFormAddVehicle, showFormAddVehicle, vehicle
   function closeModalAddVehiculo() {
     setShowFormAddVehicle(false);
     setVehicleEditar({
-      marca: '', id: '', kilometraje: 0, placa: '', modelo: '', uid: '', year: '',
+      marca: '', id: '', kilometraje: 0, placa: '', modelo: '', uid: '', year: '', cilindraje: 0,
       createdAt: { _nanoseconds: 0, _seconds: 0 }, updatedAt: { _nanoseconds: 0, _seconds: 0 }
     });
   }
@@ -276,7 +277,7 @@ function CrearVehiculoModal({ setShowFormAddVehicle, showFormAddVehicle, vehicle
 }
 
 interface PropsModalInfo {
-  vehicleEditar: any | null,
+  vehicleEditar: Vehiculo | null
   setVehicleEditar?: (vehicle: any | null) => void
   setShowFormAddVehicle: (value: boolean) => void
   unidad?: string
@@ -292,6 +293,7 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
   const [marcaName, setMarcaName] = useState('Toyota');
   const [tipoVehiculo, setTipoVehiculo] = useState('automovil');
   const [modelo, setModelo] = useState('');
+  const [cilindraje, setCilindraje] = useState(0);
   const [marcas, setMarcas] = useState<MarcaLocal[]>(MARCAS);
   const [todosModelos, setTodosModelos] = useState<ModeloLocal[]>(MODELOS);
   const [year, setYear] = useState('');
@@ -321,7 +323,7 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
   async function onPress() {
     setIsLoading(true);
 
-    const body = { id: vehicleEditar?.id, marca: marcaName, modelo, year, placa, kilometraje, tipo: tipoVehiculo }
+    const body = { id: vehicleEditar?.id, marca: marcaName, modelo, year, placa, kilometraje, tipo: tipoVehiculo, cilindraje }
 
     // Validacion de campos obligatorios
     if ([marca, modelo, year, placa].includes('')) {
@@ -340,7 +342,7 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
 
         if (response.error) {
           setAlerta({ message: response.message, error: response.error });
-          setKilometraje(vehicleEditar?.kilometraje);
+          setKilometraje(vehicleEditar?.kilometraje.toString());
 
           setTimeout(() => {
             setAlerta({ message: '', error: false });
@@ -355,7 +357,8 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
         vehicleEditar.id = '';
         vehicleEditar.placa = '';
         vehicleEditar.year = '';
-        vehicleEditar.kilometraje = '';
+        vehicleEditar.kilometraje = 0;
+        vehicleEditar.cilindraje = 0;
 
       } catch {
         setIsLoading(false);
@@ -426,6 +429,7 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
       setYear(vehicleEditar.year.toString());
       setPlaca(vehicleEditar.placa || '');
       setKilometraje(vehicleEditar.kilometraje.toString());
+      setCilindraje(vehicleEditar.cilindraje ?? 0);
     } else {
       // Resetear campos si no hay vehículo a editar
       setMarca('1');
@@ -434,6 +438,7 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
       setYear('');
       setPlaca('');
       setKilometraje('');
+      setCilindraje(0);
     }
   }, [vehicleEditar]);
 
@@ -477,7 +482,7 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
 
       <Text style={styles.labelTipo}>Tipo de vehículo *</Text>
       <View style={styles.tipoRow}>
-        {(['automovil', 'moto'] as const).map((t) => (
+        {(['automovil', 'moto']).map((t) => (
           <TouchableOpacity
             key={t}
             style={[styles.tipoChip, tipoVehiculo === t && styles.tipoChipActivo]}
@@ -490,12 +495,12 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
             </Text>
           </TouchableOpacity>
         ))}
-          </View>
-          {marcasPorTipo.length === 0 && !vehicleEditar?.id ? (
-            <Text style={styles.avisoCatalogo}>
-              No hay marcas para este tipo. Ejecuta el seed del catálogo en el backend.
-            </Text>
-          ) : null}
+      </View>
+      {marcasPorTipo.length === 0 && !vehicleEditar?.id ? (
+        <Text style={styles.avisoCatalogo}>
+          No hay marcas para este tipo de vehículo
+        </Text>
+      ) : null}
 
       {!vehicleEditar?.id ? (
         <>
@@ -567,7 +572,7 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
         autoCapitalize='characters'
         maxLength={8}
         onChangeText={text => validarPlaca(text)}
-        disabled={isLoading || vehicleEditar?.id}
+        disabled={vehicleEditar?.id ? true : isLoading}
         underlineColor='transparent'
         activeUnderlineColor='#1D4ED8'
         cursorColor='#1D4ED8'
@@ -587,6 +592,22 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
         cursorColor='#1D4ED8'
         left={<TextInput.Icon icon='speedometer' />}
       />
+
+      {tipoVehiculo === 'moto' ? (
+        <TextInput
+          placeholder='100cc'
+          label='Cilindraje'
+          keyboardType='numeric'
+          style={styles.input}
+          value={cilindraje.toString()}
+          onChangeText={text => setCilindraje(Number(text))}
+          disabled={isLoading}
+          underlineColor='transparent'
+          activeUnderlineColor='#1D4ED8'
+          cursorColor='#1D4ED8'
+          left={<TextInput.Icon icon='engine' />}
+        />
+      ) : null}
 
       <Button
         mode="contained"

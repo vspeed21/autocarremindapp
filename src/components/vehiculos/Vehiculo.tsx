@@ -47,6 +47,13 @@ function Vehiculo({ vehiculo, conteoMantenimientos = 0, progreso = 12, unidad = 
             <Icon size={16} source='speedometer' color='#1D4ED8' />
             <Text style={styles.specText}>{formatearDistancia(vehiculo.kilometraje, unidad)}</Text>
           </View>
+          {vehiculo.tipo === 'moto' ? (
+            <View style={styles.spec}>
+              <Icon size={16} source='engine' color='#1D4ED8' />
+              <Text style={styles.specText}>{vehiculo.cilindraje} cc</Text>
+            </View>
+
+          ) : null}
         </View>
 
         <View style={styles.progressTrack}>

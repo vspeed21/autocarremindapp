@@ -61,13 +61,12 @@ function SignUpScreen() {
       setIsLoading(false);
 
       if (data.code === 201) {
-        setTimeout(() => {
-          router.replace('/auth/login');
-        }, 1000);
+        router.replace('/auth/login');
       }
 
 
-    } catch {
+    } catch (error) {
+      console.log(error);
       mostrarError('No se pudo crear la cuenta. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
