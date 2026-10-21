@@ -34,6 +34,16 @@ export async function actualizarVehiculo(body: any) {
   }
 }
 
+export async function eliminarVehiculo(id: string) {
+  try {
+    const config = await getConfigAxios();
+    const { data } = await apiClient.delete(`${BASE_URL}/${id}`, config);
+    return data;
+  } catch (error: any) {
+    return error.response.data;
+  }
+}
+
 export async function sumarKilometraje(vehiculoId: string, km: number, viajeId: string) {
   try {
     const config = await getConfigAxios();

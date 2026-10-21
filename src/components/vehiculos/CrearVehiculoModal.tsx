@@ -1,9 +1,8 @@
 import { AlertaMessage } from '@/src/components/shared';
-import { MarcaCatalogo, ModeloCatalogo, getItem, getMarcas, getModelos } from '@/src/services';
-import { actualizarVehiculo, crearVehiculo } from '@/src/services/api/vehiculoServices';
+import { MarcaCatalogo, ModeloCatalogo, actualizarVehiculo, crearVehiculo, eliminarVehiculo, getItem, getMarcas, getModelos } from '@/src/services';
 import { router, usePathname } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 import { Button, FAB, Portal, TextInput } from 'react-native-paper';
 import { Vehiculo } from '../../interfaces/vehiculos';
@@ -386,6 +385,25 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
 
   }
 
+  async function onPressDelete() {
+    Alert.alert('¿Esta seguro?',
+      'Este proceso eliminara el vehículo y sus respectivos mantenimientos',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => onPressConfirmDelete() }
+      ]
+    );
+  }
+
+  async function onPressConfirmDelete() {
+    try {
+      await eliminarVehiculo(vehicleEditar ? vehicleEditar.id.toString() : '');
+      setShowFormAddVehicle(false);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   useEffect(() => {
     getCatalogoVehiculos();
     async function getCatalogoVehiculos() {
@@ -619,6 +637,18 @@ function CreateVehicleModalInfoModal({ vehicleEditar, setShowFormAddVehicle, uni
         {vehicleEditar?.id ? 'Actualizar Información del vehículo' : 'Agregar Vehículo'}
       </Button>
 
+      {vehicleEditar && vehicleEditar.id ? (
+        <Button
+          mode="contained"
+          onPress={onPressDelete}
+          style={styles.submitDelete}
+          labelStyle={styles.submitLabel}
+          disabled={isLoading}
+        >
+          Eliminar vehículo y sus mantenimientos
+        </Button>
+      ) : null}
+
     </View>
   );
 
@@ -733,6 +763,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#1D4ED8',
   },
+  submitDelete: {
+    margin: 10,
+    borderRadius: 16,
+    backgroundColor: '#d81d1d',
+  },
+
   submitLabel: {
     fontWeight: '800',
   },
