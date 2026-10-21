@@ -24,17 +24,17 @@ function SignUpScreen() {
   async function onPress() {
     try {
       if ([nombre, email, password].includes('')) {
-        mostrarError('Completa todos los campos para crear tu cuenta');
+        mostrarAlerta('Completa todos los campos para crear tu cuenta');
         return;
       }
 
       if (!esEmailValido(email)) {
-        mostrarError('Ingresa un correo electrónico válido');
+        mostrarAlerta('Ingresa un correo electrónico válido');
         return;
       }
 
       if (password.length < 8) {
-        mostrarError('La contraseña debe tener al menos 8 caracteres');
+        mostrarAlerta('La contraseña debe tener al menos 8 caracteres');
         return;
       }
 
@@ -61,20 +61,23 @@ function SignUpScreen() {
       setIsLoading(false);
 
       if (data.code === 201) {
-        router.replace('/auth/login');
+        mostrarAlerta('Revisa tu bandeja de entrada en el correo ingresado para confirmar tu cuenta', false);
+        setTimeout(() => {
+          router.replace('/auth/login');
+        }, 3500);
       }
 
 
     } catch (error) {
       console.log(error);
-      mostrarError('No se pudo crear la cuenta. Intenta de nuevo.');
+      mostrarAlerta('No se pudo crear la cuenta. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
     }
   }
 
-  function mostrarError(message: string) {
-    setAlerta({ error: true, message, show: true });
+  function mostrarAlerta(message: string, error: boolean = true) {
+    setAlerta({ error: error, message, show: true });
     setTimeout(() => {
       setAlerta({ error: false, message: '', show: false });
     }, 3000);
@@ -85,7 +88,7 @@ function SignUpScreen() {
 
       <Overlay
         visible={isLoading}
-        message='Validando credenciales...'
+        message='Creando cuenta...'
       />
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -242,8 +245,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F9FD',
   },
   alertText: {
+    fontSize: 16,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBlock: 12,
     fontWeight: 'bold',
   },
   alertError: {
