@@ -1,4 +1,5 @@
 import apiClient from '@/src/config/client/axios';
+import getConfigAxios from '@/src/config/client/config';
 
 
 export interface MarcaCatalogo {
@@ -14,6 +15,8 @@ export interface ModeloCatalogo {
   year?: number;
   tipo?: string;
 }
+
+const BASE_URL = '/catalogo';
 
 /**
  * Marcas del catálogo global (GET /api/marcas). Endpoint público.
@@ -39,5 +42,45 @@ export async function getModelos(marcaId?: string) {
   } catch {
     // Sin acción adicional: la UI usa el respaldo local.
     return { error: true, data: [] };
+  }
+}
+
+export async function getCatalogoMantenimientos() {
+  try {
+    const config = await getConfigAxios();
+    const { data } = await apiClient.get(BASE_URL, config);
+    return { ...data, data: data?.data ?? [] };
+  } catch (error: any) {
+    return error.response?.data ?? { error: true, data: [] };
+  }
+}
+
+export async function crearMantenimientoCatalogo(body: any) {
+  try {
+    const config = await getConfigAxios();
+    const { data } = await apiClient.post(BASE_URL, body, config);
+    return { ...data, data: data?.data ?? [] };
+  } catch (error: any) {
+    return error.response?.data ?? { error: true, data: [] };
+  }
+}
+
+export async function actualizarMantenimientoCatalogo(body: any, id: string) {
+  try {
+    const config = await getConfigAxios();
+    const { data } = await apiClient.put(`${BASE_URL}/${id}`, body, config);
+    return { ...data, data: data?.data ?? [] };
+  } catch (error: any) {
+    return error.response?.data ?? { error: true, data: [] };
+  }
+}
+
+export async function eliminarMantenimientoCatalogo(id: any) {
+  try {
+    const config = await getConfigAxios();
+    const { data } = await apiClient.delete(`${BASE_URL}/${id}`, config);
+    return { ...data, data: data?.data ?? [] };
+  } catch (error: any) {
+    return error.response?.data ?? { error: true, data: [] };
   }
 }
